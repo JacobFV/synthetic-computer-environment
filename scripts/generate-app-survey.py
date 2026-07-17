@@ -116,7 +116,33 @@ portrait_index = load_json(EVIDENCE / "app-portrait-index.json")
 manifest = load_json(EVIDENCE / "evidence-manifest.json")
 catalog = {app["id"]: app for app in snapshot["appCatalog"]}
 portrait_by_id = {item["appId"]: item for item in portrait_index}
-audit = manifest["summary"].get("uiAudit") or {}
+summary = manifest["summary"]
+audit = summary.get("uiAudit") or {}
+
+# Refuse to publish a decorative or internally inconsistent survey. The final
+# PDF is generated only after replay has caused observable kernel activity and
+# the evidence manifest has been refreshed from that same snapshot.
+installed_instances = sum(len(computer.get("installedApps", [])) for computer in snapshot.get("computers", []))
+expected_counts = {
+    "catalogApplications": len(catalog),
+    "appPortraits": len(portrait_index),
+    "installedApplicationInstances": installed_instances,
+    "packetRecords": len(snapshot.get("packets", [])),
+    "applicationExecutions": len(snapshot.get("appExecutions", [])),
+}
+if expected_counts["packetRecords"] < 1 or snapshot.get("trajectoryLength", 0) <= 1:
+    raise RuntimeError("runtime evidence is not replayed: expected packets and more than one trajectory event")
+for key, expected in expected_counts.items():
+    if summary.get(key) != expected:
+        raise RuntimeError(f"stale evidence manifest: {key}={summary.get(key)!r}, snapshot={expected!r}")
+if set(catalog) != set(portrait_by_id):
+    missing = sorted(set(catalog) - set(portrait_by_id))
+    extra = sorted(set(portrait_by_id) - set(catalog))
+    raise RuntimeError(f"portrait/catalog mismatch: missing={missing}, extra={extra}")
+for item in portrait_index:
+    portrait_path = EVIDENCE / "app-portraits" / item["file"]
+    if not portrait_path.is_file():
+        raise RuntimeError(f"missing application portrait: {portrait_path}")
 
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 c = canvas.Canvas(str(OUTPUT), pagesize=(PAGE_W, PAGE_H), pageCompression=1)
@@ -134,7 +160,7 @@ c.setFillColor(WHITE)
 c.setFont("SeedSans-Bold", 34)
 c.drawString(44, PAGE_H - 110, "A computer ecosystem")
 c.drawString(44, PAGE_H - 150, "whose pixels have causes")
-paragraph(c, "Sixty manifest-backed applications across macOS, Windows, and Ubuntu - surveyed against their rendered product surface, declared operations, service dependencies, and authoritative runtime state.", 44, PAGE_H - 180, 650, 64, 12, HexColor("#CED7E7"))
+paragraph(c, f"{len(catalog)} manifest-backed applications across macOS, Windows, and Ubuntu - surveyed against their rendered product surface, declared operations, service dependencies, and authoritative runtime state.", 44, PAGE_H - 180, 650, 64, 12, HexColor("#CED7E7"))
 grid = EVIDENCE / "48-desktop-states-grid.png"
 if grid.exists():
     fit_image(c, grid, 44, 42, PAGE_W - 88, 290, HexColor("#090D16"))
@@ -142,9 +168,18 @@ c.setFillColor(MINT)
 c.rect(44, 26, 108, 3, stroke=0, fill=1)
 c.showPage(); page += 1
 
+# Service isolation
+page_header(c, page, "service isolation")
+title(c, "Slack and Teams have independent service planes", "Two client populations share DNS and packet transport, but not hosts, stores, revisions, APIs, or polling loops.")
+service_isolation = ROOT / "output/diagrams/service-isolation.png"
+if service_isolation.exists():
+    fit_image(c, service_isolation, 42, 157, PAGE_W - 84, 292, WHITE)
+paragraph(c, "A Slack send reaches Slack clients through slack.seed.local. A Teams post reaches Teams clients through teams.seed.local. The topology validator rejects a shared host or isolation domain, and the integration test verifies that a Slack message does not appear in the contemporaneous Teams poll.", 42, 124, PAGE_W - 84, 68, 9.3, MUTED)
+c.showPage(); page += 1
+
 # Validity model
 page_header(c, page, "validity model")
-title(c, "A screenshot is evidence only when the state agrees", "Seed evaluates visual, interaction, semantic, and causal fidelity independently.")
+title(c, "A screenshot is evidence only when state agrees", "Seed evaluates visual, interaction, semantic, and causal fidelity independently.")
 diagram = ROOT / "output/diagrams/causal-proof.png"
 if diagram.exists():
     fit_image(c, diagram, 42, 254, PAGE_W - 84, 155, WHITE)
@@ -168,7 +203,7 @@ c.showPage(); page += 1
 
 # Architecture
 page_header(c, page, "architecture")
-title(c, "Authority boundaries make the ecosystem extensible", "Turborepo schedules fourteen workspaces; the boundary checker rejects undeclared edges, cycles, and cross-package source escapes.")
+title(c, "Typed boundaries keep the ecosystem extensible", "Turborepo schedules fourteen workspaces; the boundary checker rejects undeclared edges, cycles, and cross-package source escapes.")
 architecture = ROOT / "output/diagrams/architecture.png"
 if architecture.exists():
     fit_image(c, architecture, 42, 64, 540, 410, WHITE)
@@ -182,13 +217,12 @@ for y, text_value, color in [
     c.setFillColor(color)
     c.circle(618, y + 6, 4, stroke=0, fill=1)
     c.setFillColor(INK)
-    c.setFont("SeedSans-Bold", 11)
-    c.drawString(632, y, text_value)
+    paragraph(c, text_value, 632, y + 11, 120, 28, 9.2, INK, True, 10.5)
 c.showPage(); page += 1
 
 # Topology and evidence
 page_header(c, page, "reference ecosystem")
-title(c, "Three displayed computers share one typed virtual internet")
+title(c, "Three computers share one typed virtual internet")
 computers = [
     ("mac-studio", "macOS 26", "10.42.0.10", "zsh", BLUE),
     ("win-workstation", "Windows 11 26H2", "10.42.0.20", "PowerShell", VIOLET),
@@ -214,27 +248,83 @@ for index, (host, os_name, address, shell, color) in enumerate(computers):
 c.showPage(); page += 1
 
 page_header(c, page, "rendered breadth")
-title(c, "Forty-eight workflows are captured at full resolution", "The contact sheet is an index; six larger per-OS plates preserve legibility, and every scene is validated against the actual installed topology.")
+title(c, "Forty-eight workflows at full resolution", "The contact sheet is an index; six larger per-OS plates preserve legibility, and every scene is validated against the actual installed topology.")
 if grid.exists():
     fit_image(c, grid, 42, 80, PAGE_W - 84, 392, HexColor("#090D16"))
 c.showPage(); page += 1
 
-# Platform icon walls
-page_header(c, page, "application inventory")
-title(c, "The launchers expose the installed ecosystem - not a curated mockup")
-for index, (computer_id, label) in enumerate([("mac-studio", "macOS"), ("win-workstation", "Windows"), ("ubuntu-dev", "Ubuntu")]):
+# Larger workflow plates preserve enough detail to inspect window composition.
+workflow_plates = [
+    ("mac-studio", "macOS", 1, "states 01-08", BLUE),
+    ("mac-studio", "macOS", 2, "states 09-16", BLUE),
+    ("win-workstation", "Windows", 1, "states 17-24", VIOLET),
+    ("win-workstation", "Windows", 2, "states 25-32", VIOLET),
+    ("ubuntu-dev", "Ubuntu", 1, "states 33-40", CORAL),
+    ("ubuntu-dev", "Ubuntu", 2, "states 41-48", CORAL),
+]
+for computer_id, os_label, part, state_range, accent in workflow_plates:
+    page_header(c, page, "workflow detail")
+    title(c, f"{os_label} workflow plate {part}", f"{state_range}: eight concurrent, non-terminal-first work configurations captured from {computer_id}.")
+    plate = EVIDENCE / "workflow-plates" / f"{computer_id}-workflows-{part}.png"
+    if not plate.is_file():
+        raise RuntimeError(f"missing workflow plate: {plate}")
+    fit_image(c, plate, 42, 210, PAGE_W - 84, 226, HexColor("#090D16"))
+    c.setFillColor(accent)
+    c.rect(42, 113, 4, 58, stroke=0, fill=1)
+    paragraph(c, "Each tile is a full Playwright desktop capture with OS chrome, focus, overlapping windows, real catalog apps, and a scene label. The plate is an inspection aid; the 1440 x 900 source captures remain in artifacts/evidence-v3/48-states.", 58, 165, PAGE_W - 100, 68, 9.3, MUTED)
+    c.showPage(); page += 1
+
+# Platform icon walls. Give each launcher a full page so its icon labels remain
+# legible and the 16:10 screenshots do not acquire a thick matte.
+os_counts = values_by_os(snapshot)
+for computer_id, label, os_key, accent in [
+    ("mac-studio", "macOS", "macos", BLUE),
+    ("win-workstation", "Windows", "windows", VIOLET),
+    ("ubuntu-dev", "Ubuntu", "ubuntu", CORAL),
+]:
+    page_header(c, page, "application inventory")
+    title(c, f"{label} exposes {os_counts.get(os_key, 0)} installed applications", "A real launcher state captured from the displayed computer, including system applications and separately installed ecosystem packages.")
     image_path = EVIDENCE / "icon-walls" / f"{computer_id}.png"
-    x = 42 + index * 246
-    if image_path.exists():
-        fit_image(c, image_path, x, 132, 225, 360, HexColor("#090D16"))
+    if not image_path.is_file():
+        raise RuntimeError(f"missing icon wall: {image_path}")
+    fit_image(c, image_path, 42, 45, PAGE_W - 84, 442.5, PAPER)
+    c.setFillColor(accent)
+    c.rect(42, 28, 108, 3, stroke=0, fill=1)
+    c.showPage(); page += 1
+
+# Companion motion evidence
+page_header(c, page, "motion evidence")
+title(c, "Seven recordings expose cross-device causality", "The PDF is a static atlas. The companion MP4 and GIF files preserve cursor movement, button/key overlays, and the receiving display where a workflow crosses computers.")
+recordings = [
+    ("Slack cross-device", "macOS Slack sends; Ubuntu Slack polls the Slack service", "slack-cross-device-live.mp4", BLUE),
+    ("Teams cross-device", "Windows Teams posts; macOS Teams polls the Teams service", "teams-cross-device-live.mp4", VIOLET),
+    ("Windows to Ubuntu HTTP", "Chromium request, Ubuntu listener, socket and packet trace", "windows-to-ubuntu-network-live.mp4", CORAL),
+    ("VFS save and observe", "Application write appears through the shared VFS authority", "vfs-file-save-and-observe.mp4", MINT),
+    ("App Store install", "Registry request, VFS package, receipt, and launcher state", "app-store-install-live.mp4", BLUE),
+    ("Packages and Git", "APT receipt and commit state appear in their desktop clients", "package-manager-and-git.mp4", VIOLET),
+    ("Windows window management", "drag, maximize, restore, minimize, and focus transitions", "windows-window-management.mp4", CORAL),
+]
+for index, (name, body, file_name, accent) in enumerate(recordings):
+    recording_path = EVIDENCE / "recordings" / file_name
+    if not recording_path.is_file():
+        raise RuntimeError(f"missing recording: {recording_path}")
+    y = 448 - index * 55
+    c.setFillColor(accent)
+    c.circle(50, y + 6, 4, stroke=0, fill=1)
     c.setFillColor(INK)
-    c.setFont("SeedSans-Bold", 11)
-    c.drawCentredString(x + 112.5, 108, label)
+    c.setFont("SeedSans-Bold", 9.5)
+    c.drawString(64, y + 2, name)
+    c.setFont("SeedSans", 8.2)
+    c.setFillColor(MUTED)
+    c.drawString(220, y + 8, body)
+    c.setFont("SeedSans", 7)
+    c.setFillColor(HexColor("#8791A3"))
+    c.drawString(220, y - 7, file_name)
 c.showPage(); page += 1
 
 # Coverage table
 page_header(c, page, "software substrate")
-title(c, "Packages and Git share the same virtual disk as applications")
+title(c, "Packages, Git, and apps share one virtual disk")
 native = ["brew", "mas", "apt", "dpkg", "snap", "flatpak", "winget", "choco", "scoop"]
 project = ["npm", "pnpm", "yarn", "bun", "pip", "pipx", "poetry", "uv", "cargo", "go", "gem", "composer", "dotnet", "nuget", "vcpkg", "conda"]
 paragraph(c, "Native and operating-system managers", 42, 446, 300, 40, 12, INK, True)
@@ -259,7 +349,7 @@ c.showPage(); page += 1
 
 # App index
 page_header(c, page, "atlas index")
-title(c, "Every catalog application receives an individual rendered survey")
+title(c, "Every catalog app receives a rendered survey")
 sorted_apps = sorted(catalog.values(), key=lambda item: (not item.get("system", False), item["name"].lower()))
 columns = 4
 rows = 15
@@ -296,7 +386,9 @@ for atlas_number, app in enumerate(sorted_apps, start=1):
 
     image_path = EVIDENCE / "app-portraits" / portrait["file"] if portrait else None
     if image_path and image_path.exists():
-        fit_image(c, image_path, 42, 87, 492, 330, HexColor("#090D16"))
+        # The source portraits are 16:10. Matching that ratio avoids the dark
+        # matte that made earlier rounded screenshots look double-bordered.
+        fit_image(c, image_path, 42, 100, 492, 307.5, PAPER)
 
     right_x, right_w = 560, 190
     used = paragraph(c, app.get("description", ""), right_x, 443, right_w, 74, 9.2, INK, True)
@@ -331,14 +423,13 @@ for atlas_number, app in enumerate(sorted_apps, start=1):
 # Evidence close
 page_header(c, page, "evidence index")
 title(c, "The atlas is backed by machine-readable proof")
-summary = manifest["summary"]
 facts = [
     (str(summary.get("workflowStates", 0)), "workflow states"),
     (str(summary.get("appPortraits", 0)), "application portraits"),
     (str(summary.get("motionRecordings", 0)), "interaction recordings"),
-    (str(audit.get("inspected", 0)), "rendered app instances audited"),
-    (str(audit.get("errors", 0)), "UI audit errors"),
-    (str(audit.get("warnings", 0)), "UI audit warnings"),
+    (str(summary.get("packetRecords", 0)), "causal packet records"),
+    (str(snapshot.get("trajectoryLength", 0)), "trajectory events"),
+    (str(summary.get("applicationExecutions", 0)), "VFS application executions"),
 ]
 for index, (value, label) in enumerate(facts):
     x = 42 + (index % 3) * 244
@@ -349,7 +440,7 @@ for index, (value, label) in enumerate(facts):
     c.setFont("SeedSans-Bold", 29)
     c.drawString(x + 16, y + 62, value)
     paragraph(c, label, x + 16, y + 49, 190, 42, 9.5, MUTED)
-paragraph(c, "Evidence hashes, dimensions, durations, the final runtime snapshot, application execution records, packet traces, and trajectory JSONL are stored under artifacts/evidence-v3. The technical report describes exactly what those artifacts prove - and what Seed does not claim.", 42, 102, PAGE_W - 84, 58, 9.5, MUTED)
+paragraph(c, f"The UI audit inspected {audit.get('inspected', 0)} installed application instances with {audit.get('errors', 0)} errors and {audit.get('warnings', 0)} warnings. Evidence hashes, dimensions, durations, the final runtime snapshot, application execution records, packet traces, and trajectory JSONL are stored under artifacts/evidence-v3. The technical report describes exactly what those artifacts prove - and what Seed does not claim.", 42, 102, PAGE_W - 84, 64, 9.2, MUTED)
 c.showPage()
 
 c.save()

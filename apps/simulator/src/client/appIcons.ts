@@ -6,7 +6,7 @@ export const PlatformIconContext = createContext<OSKind | undefined>(undefined);
 
 const platformIconOverrides: Partial<Record<`${OSKind}:${string}`, string>> = {
   'macos:settings': 'macossettings',
-  'macos:textedit': 'macosnotes',
+  'macos:textedit': 'macostextedit',
   'macos:calendar': 'macoscalendar',
   'macos:mail': 'macosmail',
   'windows:explorer': 'windowsfolder',

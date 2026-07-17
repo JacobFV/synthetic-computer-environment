@@ -9,3 +9,5 @@ onlyBuiltDependencies:
 allowBuilds:
   esbuild: true
   sharp: true
+storeDir: .pnpm-home/store
+verifyDepsBeforeRun: false

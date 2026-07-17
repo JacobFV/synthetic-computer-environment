@@ -24,6 +24,7 @@ pnpm audit:ui          # inspect every installed app in real Chromium
 pnpm demo              # deterministic cross-computer contract + JSONL
 pnpm capture:evidence  # workflow states, app atlas, icon walls, videos
 pnpm manifest:evidence # hash and measure the release evidence
+pnpm release:archive   # package tracked source, Git history, and final evidence
 ```
 
 Set `SEED_RUN_ID` to resume a named world. Otherwise the server creates `run-<timestamp>`. Virtual disks use the requested inode-blob layout:
@@ -102,7 +103,7 @@ Real HTTP(S) egress is disabled unless an enabled gateway rule matches protocol,
 - [app and fidelity survey PDF](output/pdf/seed-computer-ecosystem-app-survey-v0.3.0.pdf)
 - [research evidence deck](output/seed-computer-ecosystem-research-evidence-v0.3.0.pptx)
 
-The evidence suite contains individual full-resolution workflow states, legible per-OS plates, one portrait for every catalog application, complete launcher/icon walls, a DOM geometry audit, runtime snapshots/trajectories, and paired MP4 recordings with visible pointer/keyboard event overlays.
+The evidence suite contains individual full-resolution workflow states, legible per-OS plates, one portrait for every catalog application, complete launcher/icon walls, a DOM geometry audit, runtime snapshots/trajectories, and seven scripted MP4 recordings with visible pointer/keyboard event overlays. Cross-device claims use paired, simultaneous two-computer views.
 
 ## Fidelity contract
 
@@ -116,3 +117,5 @@ This workspace uses a repository-local Git store so the complete history can shi
 scripts/git-local.sh log --oneline --decorate
 scripts/git-local.sh status --short
 ```
+
+The packaged release also includes a portable Git bundle that can be cloned into a conventional checkout with `git clone seed-computer-ecosystem-0.3.0.bundle seed-computer-ecosystem`.

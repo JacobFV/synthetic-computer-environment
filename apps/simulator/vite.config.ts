@@ -11,14 +11,14 @@ const iconSources: Record<string, string> = {
   windowssettings: 'fluent-color:settings-48', windowsnotepad: 'fluent-color:document-text-48', windowsfolder: 'fluent-color:document-folder-24',
   thunderbird: 'simple-icons:thunderbird',
   appstore: 'logos:apple-app-store', store: 'fluent-color:apps-48', slack: 'logos:slack-icon',
-  teams: 'logos:microsoft-teams', chatgpt: 'logos:openai-icon', vscode: 'logos:visual-studio-code', wireshark: 'simple-icons:wireshark',
+  teams: 'logos:microsoft-teams', chatgpt: 'simple-icons:openai', vscode: 'logos:visual-studio-code', wireshark: 'simple-icons:wireshark',
   safari: 'logos:safari', edge: 'logos:microsoft-edge', messages: 'fluent-color:chat-48', facetime: 'fluent-color:video-48',
   music: 'logos:spotify-icon', maps: 'logos:google-maps', reminders: 'fluent-color:clipboard-task-24', paint: 'fluent-color:paint-brush-32',
   snipping: 'fluent-color:camera-24', taskmanager: 'fluent-color:apps-list-detail-32', outlook: 'fluent-color:mail-multiple-32',
   systemmonitor: 'fluent-color:apps-list-32', updater: 'fluent-color:arrow-sync-24', document: 'fluent-color:document-48',
-  packages: 'fluent-color:apps-48', firefox: 'logos:firefox', github: 'logos:github-icon', gitkraken: 'logos:gitkraken',
+  packages: 'fluent-color:apps-48', firefox: 'logos:firefox', github: 'simple-icons:github', gitkraken: 'logos:gitkraken',
   docker: 'logos:docker-icon', postman: 'logos:postman-icon', figma: 'logos:figma', notion: 'logos:notion-icon',
-  linear: 'logos:linear-icon', discord: 'logos:discord-icon', zoom: 'logos:zoom-icon', spotify: 'logos:spotify-icon',
+  linear: 'simple-icons:linear', discord: 'logos:discord-icon', zoom: 'logos:zoom-icon', spotify: 'logos:spotify-icon',
   obsidian: 'logos:obsidian-icon', vlc: 'simple-icons:vlcmediaplayer', blender: 'logos:blender', gimp: 'simple-icons:gimp',
   libreoffice: 'simple-icons:libreoffice', audacity: 'simple-icons:audacity', steam: 'logos:steam', bitwarden: 'simple-icons:bitwarden',
   onepassword: 'simple-icons:1password', cursor: 'simple-icons:cursor', dbeaver: 'simple-icons:dbeaver',
@@ -81,6 +81,10 @@ const nativeProductIcons: Record<string, { width: number; height: number; body: 
   macossettings: {
     width: 64, height: 64,
     body: '<defs><linearGradient id="ms" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d9dde2"/><stop offset="1" stop-color="#7f8791"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#ms)"/><g fill="#f8fafc" transform="translate(32 32)"><path d="M-5-21h10l2 7 6 3 7-2 5 9-5 5v7l5 5-5 9-7-2-6 3-2 7H-5l-2-7-6-3-7 2-5-9 5-5V1l-5-5 5-9 7 2 6-3 2-7Z"/><circle r="10" fill="#7f8791"/><circle r="5"/></g>',
+  },
+  macostextedit: {
+    width: 64, height: 64,
+    body: '<defs><linearGradient id="mte" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#e8edf3"/></linearGradient></defs><rect x="6" y="3" width="48" height="58" rx="9" fill="url(#mte)" stroke="#cbd2db"/><path d="M16 18h28M16 27h24M16 36h20M16 45h17" stroke="#8e99a7" stroke-width="2.4" stroke-linecap="round"/><path fill="#2f8de4" d="m39 48 13-24 6 3-13 24-9 6 3-9Z"/><path fill="#bcdcff" d="m52 24 3-5 6 3-3 5Z"/>',
   },
   macosnotes: {
     width: 64, height: 64,

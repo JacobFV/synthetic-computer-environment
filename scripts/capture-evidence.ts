@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createReadStream } from 'node:fs';
-import { chmod, copyFile, mkdir, stat, unlink, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBrotliDecompress } from 'node:zlib';
@@ -57,6 +57,21 @@ async function run(command: string, args: string[]) {
     child.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)));
     child.once('error', reject);
   });
+}
+
+async function countFiles(directory: string, suffix?: string): Promise<number> {
+  try {
+    return (await readdir(directory, { withFileTypes: true })).filter((entry) => entry.isFile() && (!suffix || entry.name.endsWith(suffix))).length;
+  } catch {
+    return 0;
+  }
+}
+
+async function runBrowserPhase(name: string, action: (browser: Browser) => Promise<void>) {
+  const browser = await launchBrowser();
+  try { await action(browser); }
+  finally { await browser.close().catch(() => undefined); }
+  console.log(`completed ${name}`);
 }
 
 interface EvidenceScene { label: string; apps: string[] }
@@ -251,20 +266,38 @@ async function waitFrame(page: Page, token: string) {
 
 async function record(name: string, action: (page: Page) => Promise<void>) {
   const mp4 = path.join(evidence, 'recordings', `${name}.mp4`);
-  try { if ((await stat(mp4)).size > 100_000) { console.log(`preserved ${mp4}`); return; } } catch {}
+  try {
+    if ((await stat(mp4)).size > 100_000 && !forcedPhases.has('recordings')) {
+      console.log(`preserved ${mp4}`);
+      return;
+    }
+  } catch {}
   const videoDir = path.join(evidence, 'recordings', 'raw', name);
   await mkdir(videoDir, { recursive: true });
   const recordingBrowser = await launchBrowser();
   const context = await recordingBrowser.newContext({ viewport: { width: 1600, height: 900 }, recordVideo: { dir: videoDir, size: { width: 1600, height: 900 } } });
   const page = await context.newPage();
   const video = page.video();
-  try { await action(page); await page.waitForTimeout(800); }
+  try {
+    await action(page);
+    recordingActionsExecuted++;
+    await page.waitForTimeout(800);
+  }
   finally { await context.close(); await recordingBrowser.close(); }
   if (!video) throw new Error('playwright video recorder unavailable');
   const webm = await video.path();
   await mkdir(path.dirname(mp4), { recursive: true });
   await run('ffmpeg', ['-y', '-i', webm, '-an', '-c:v', 'libx264', '-preset', 'medium', '-crf', '21', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', mp4]);
-  await run('ffmpeg', ['-y', '-ss', '00:00:02', '-i', mp4, '-frames:v', '1', path.join(evidence, 'recordings', `${name}-poster.png`)]);
+  const posterOffset = ({
+    'app-store-install-live': '00:00:07',
+    'package-manager-and-git': '00:00:05',
+    'slack-cross-device-live': '00:00:07',
+    'teams-cross-device-live': '00:00:07',
+    'vfs-file-save-and-observe': '00:00:07',
+    'windows-to-ubuntu-network-live': '00:00:08',
+    'windows-window-management': '00:00:06',
+  } as Record<string, string>)[name] ?? '00:00:05';
+  await run('ffmpeg', ['-y', '-ss', posterOffset, '-i', mp4, '-frames:v', '1', path.join(evidence, 'recordings', `${name}-poster.png`)]);
   console.log(`recorded ${mp4}`);
 }
 
@@ -291,7 +324,10 @@ async function recordSameServiceCollaboration(options: { name: string; service: 
 
 async function recordNetwork() {
   await record('windows-to-ubuntu-network-live', async (page) => {
-    await page.goto('about:blank'); await installOverlay(page, 'win-workstation · Chromium', 'ubuntu-dev · Wireshark');
+    // The virtual document's CSP intentionally requires a same-origin ancestor
+    // chain. Start the evidence shell on the simulator origin so nested capture
+    // proves the production policy instead of weakening it for recording.
+    await page.goto(`${base}/api/health`); await installOverlay(page, 'win-workstation · Chromium', 'ubuntu-dev · Wireshark');
     await page.locator('#left').evaluate((node, url) => { (node as HTMLIFrameElement).src = url; }, `${base}/?computer=win-workstation&apps=chromium&scene=3&chrome=0`);
     await page.locator('#right').evaluate((node, url) => { (node as HTMLIFrameElement).src = url; }, `${base}/?computer=ubuntu-dev&apps=wireshark&scene=4&chrome=0`);
     const left = await waitFrame(page, 'computer=win-workstation');
@@ -308,9 +344,10 @@ async function recordNetwork() {
     const runAgain = virtualPage.locator('#run-javascript');
     await clickAt(page, runAgain, 'click the virtual website event handler');
     await virtualPage.getByText('2 executions', { exact: true }).waitFor({ timeout: 10_000 });
-    await right.locator('.packet-table>div').first().waitFor({ timeout: 10_000 });
+    const firstPacket = right.locator('.packet-table>button').first();
+    await firstPacket.waitFor({ timeout: 10_000 });
     await updateOverlay(page, 'real DOM + timer + Canvas · virtual TCP session · SYN → SYN/ACK → ACK → HTTP 200 → FIN');
-    await pointAt(page, right.locator('.packet-table').first(), 'packet trace updates on Ubuntu');
+    await pointAt(page, firstPacket, 'packet trace updates on Ubuntu');
     await page.waitForTimeout(3200);
   });
 }
@@ -395,14 +432,56 @@ async function recordApplicationInstall() {
 
 await bootServer();
 await mkdir(evidence, { recursive: true });
-const browser = await launchBrowser();
+const forcedPhases = new Set((process.env.SEED_CAPTURE_FORCE ?? '').split(',').map((value) => value.trim()).filter(Boolean));
+let recordingActionsExecuted = 0;
+const workflowComplete = await countFiles(path.join(evidence, '48-states'), '.png') === 48
+  && await countFiles(path.join(evidence, 'workflow-plates'), '.png') === 6;
+if (workflowComplete && !forcedPhases.has('workflows')) console.log('preserved complete workflow still suite');
+else await runBrowserPhase('workflow still suite', captureGrid);
+
+const stillSnapshot = await fetch(`${base}/api/state`).then((response) => response.json()) as {
+  appCatalog: Array<{ id: string; supportedOS: string[] }>;
+  computers: Array<{ spec: { os: string; displays: unknown[] }; installedApps: Array<{ id: string }> }>;
+};
+const displayComputers = stillSnapshot.computers.filter((computer) => computer.spec.displays.length > 0);
+const expectedPortraitCount = stillSnapshot.appCatalog.filter((app) => displayComputers.some((computer) => app.supportedOS.includes(computer.spec.os) && computer.installedApps.some((installed) => installed.id === app.id))).length;
+const expectedPortraitPlateCount = Math.ceil(expectedPortraitCount / 6);
+const portraitsComplete = await countFiles(path.join(evidence, 'app-portraits'), '.png') === expectedPortraitCount
+  && await countFiles(path.join(evidence, 'app-portrait-plates'), '.png') === expectedPortraitPlateCount;
+if (portraitsComplete && !forcedPhases.has('portraits')) console.log('preserved complete application portrait suite');
+else await runBrowserPhase('application portrait suite', captureAppPortraits);
+
+const iconWallsComplete = await countFiles(path.join(evidence, 'icon-walls'), '.png') === Object.keys(sceneApps).length;
+if (iconWallsComplete && !forcedPhases.has('icons')) console.log('preserved complete icon-wall suite');
+else await runBrowserPhase('icon-wall suite', captureIconWalls);
+
+const canonicalRecordingNames = [
+  'slack-cross-device-live',
+  'teams-cross-device-live',
+  'windows-to-ubuntu-network-live',
+  'windows-window-management',
+  'package-manager-and-git',
+  'vfs-file-save-and-observe',
+  'app-store-install-live',
+];
+const recordingSuiteComplete = (await Promise.all(canonicalRecordingNames.map(async (name) => {
+  try { return (await stat(path.join(evidence, 'recordings', `${name}.mp4`))).size > 100_000; }
+  catch { return false; }
+}))).every(Boolean);
+let runtimeProofComplete = false;
 try {
-  await captureGrid(browser);
-  await captureAppPortraits(browser);
-  await captureIconWalls(browser);
-} finally {
-  await browser.close();
-}
+  const snapshot = JSON.parse(await readFile(path.join(evidence, 'runtime-snapshot.json'), 'utf8')) as {
+    packets?: unknown[];
+    appExecutions?: unknown[];
+    trajectoryLength?: number;
+  };
+  runtimeProofComplete = (snapshot.packets?.length ?? 0) > 0
+    && (snapshot.appExecutions?.length ?? 0) > 0
+    && (snapshot.trajectoryLength ?? 0) > 1;
+} catch {}
+// A partial motion suite must be replayed as a unit so the terminal runtime
+// snapshot and trajectory contain the causal actions shown by every video.
+if (!recordingSuiteComplete || !runtimeProofComplete) forcedPhases.add('recordings');
 try {
   await recordSameServiceCollaboration({ name: 'slack-cross-device-live', service: 'slack', leftComputer: 'mac-studio', rightComputer: 'ubuntu-dev', message: 'Slack proof from mac-studio reached Ubuntu.' });
   await recordSameServiceCollaboration({ name: 'teams-cross-device-live', service: 'teams', leftComputer: 'win-workstation', rightComputer: 'mac-studio', message: 'Teams proof from Windows reached macOS.' });
@@ -411,8 +490,16 @@ try {
   await recordPackages();
   await recordFilePersistence();
   await recordApplicationInstall();
-  const finalSnapshot = await fetch(`${base}/api/state`).then((response) => response.json());
-  const trajectory = await fetch(`${base}/api/trajectory`).then((response) => response.text());
-  await writeFile(path.join(evidence, 'runtime-snapshot.json'), JSON.stringify(finalSnapshot, null, 2));
-  await writeFile(path.join(evidence, 'trajectory.jsonl'), trajectory.endsWith('\n') ? trajectory : `${trajectory}\n`);
+  const snapshotPath = path.join(evidence, 'runtime-snapshot.json');
+  const trajectoryPath = path.join(evidence, 'trajectory.jsonl');
+  let snapshotExists = true;
+  try { await stat(snapshotPath); } catch { snapshotExists = false; }
+  if (recordingActionsExecuted > 0 || !snapshotExists) {
+    const finalSnapshot = await fetch(`${base}/api/state`).then((response) => response.json());
+    const trajectory = await fetch(`${base}/api/trajectory`).then((response) => response.text());
+    await writeFile(snapshotPath, JSON.stringify(finalSnapshot, null, 2));
+    await writeFile(trajectoryPath, trajectory.endsWith('\n') ? trajectory : `${trajectory}\n`);
+  } else {
+    console.log('preserved post-interaction runtime snapshot and trajectory');
+  }
 } finally { server?.kill('SIGTERM'); }

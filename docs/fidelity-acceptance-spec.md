@@ -34,7 +34,9 @@ Category-level components are acceptable only when the role model genuinely shar
 - Cross-device evidence must show two clients of the **same** service when proving synchronization.
 - Network traces must identify the actual service hostname, protocol, source computer, destination computer, socket, and request/response operation.
 
-## Screenshot audit: release v0.2 defects
+## Historical regression ledger: release v0.2 defects
+
+The findings in this section describe the superseded v0.2 artifact, not the v0.3 implementation. They remain here as concrete regression cases for the v0.3 browser audit, workflow suite, and researcher-facing evidence.
 
 ### Platform chrome
 
@@ -76,9 +78,9 @@ Category-level components are acceptable only when the role model genuinely shar
 - Slide language responded to development feedback (“now has…”) instead of explaining the system to an unfamiliar research audience.
 - Claims emphasized requested features rather than causal evidence, acceptance criteria, and architectural boundaries.
 
-## Evidence acceptance gates
+## Release v0.3 evidence acceptance gates
 
-The next evidence release must include:
+The v0.3 evidence bundle is evaluated against the following gates:
 
 - 48 independently captured desktops with varied multi-window arrangements, no required terminal, and visible work state;
 - separate Slack→Slack and Teams→Teams synchronization recordings;

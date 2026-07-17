@@ -18,10 +18,12 @@
     "demo": "node --import tsx scripts/run-demo.ts",
     "capture": "node --import tsx scripts/capture-demos.ts",
     "capture:evidence": "node --import tsx scripts/capture-evidence.ts",
+    "capture:gifs": "node --import tsx scripts/generate-recording-gifs.ts",
     "manifest:evidence": "node --import tsx scripts/build-evidence-manifest.ts",
     "render:diagrams": "node --import tsx scripts/render-diagrams.ts",
     "survey:pdf": "python3 scripts/generate-app-survey.py",
-    "audit:ui": "node --import tsx scripts/audit-ui.ts"
+    "audit:ui": "node --import tsx scripts/audit-ui.ts",
+    "release:archive": "node --import tsx scripts/create-release-archive.ts"
   },
   "devDependencies": {
     "@hpcc-js/wasm-graphviz": "^1.26.0",

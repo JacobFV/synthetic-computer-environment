@@ -5,7 +5,8 @@
 **Reference ecosystem:** `@seed/ecosystem-seed-2026`
 
 **Audience:** researchers building and evaluating computer-interaction agents
-**Status:** implementation report; final evidence metrics are populated only after the release capture
+
+**Status:** release implementation and evidence report
 
 ## Abstract
 
@@ -443,11 +444,11 @@ The catalog is split into system applications and independently installable ecos
 
 | Metric | Final value |
 |---|---|
-| catalog manifests | pending capture <!-- METRIC:catalog_app_count --> |
-| system manifests | pending capture <!-- METRIC:system_app_count --> |
-| ecosystem manifests | pending capture <!-- METRIC:ecosystem_app_count --> |
-| installed app instances in seed topology | pending capture <!-- METRIC:installed_app_instance_count --> |
-| validated UI surface assignments | pending capture <!-- METRIC:surface_assignment_count --> |
+| catalog manifests | 60 |
+| system manifests | 31 |
+| ecosystem manifests | 29 |
+| installed app instances | 111 at topology boot; 112 after the recorded App Store installation |
+| validated UI coverage | 60 application assignments across 46 surface contracts |
 
 ### 13.1 System application sets
 
@@ -596,20 +597,21 @@ The kernel suite tests complete causal paths, including:
 - process and gateway mutation; and
 - IPv4 CIDR enforcement against every resolved address.
 
-Final measured results are inserted after a clean capture rather than copied from an earlier release:
+The release validation and capture produced these measured results:
 
 | Validation metric | Final value |
 |---|---|
-| architecture workspaces / internal edges | pending <!-- METRIC:architecture_workspaces_and_edges --> |
-| strict typecheck | pending <!-- METRIC:typecheck_result --> |
-| production build | pending <!-- METRIC:build_result --> |
-| integration tests | pending <!-- METRIC:integration_test_result --> |
-| UI audit inspected / errors / warnings | pending <!-- METRIC:ui_audit_result --> |
-| workflow scenes / plates | pending <!-- METRIC:workflow_evidence_result --> |
-| app portraits / portrait plates | pending <!-- METRIC:app_portrait_result --> |
-| motion recordings | pending <!-- METRIC:recording_result --> |
-| production JS/CSS bytes before gzip | pending <!-- METRIC:client_bundle_sizes --> |
-| release archive bytes | pending <!-- METRIC:release_archive_size --> |
+| architecture workspaces / internal edges | 14 / 30; boundary graph valid |
+| strict typecheck | 14 / 14 workspaces passed |
+| production build | 14 / 14 workspaces passed with Turbo cache bypassed |
+| integration tests | 15 / 15 passed |
+| browser document tests | 4 / 4 product surfaces passed: Chromium, Edge, Safari, Firefox |
+| UI audit inspected / errors / warnings | 111 / 0 / 0 |
+| workflow scenes / plates | 48 / 6 |
+| app portraits / portrait plates | 60 / 10 |
+| motion recordings | 7 |
+| production JS/CSS before gzip | 468.95 kB JavaScript / 118.97 kB CSS |
+| release archive bytes | pending final packaging <!-- METRIC:release_archive_size --> |
 
 ## 16. Trajectory schema and reproducibility
 
@@ -623,9 +625,11 @@ Reproduction commands:
 pnpm check:boundaries
 pnpm typecheck
 pnpm test
-pnpm build
+pnpm test:browser
+pnpm exec turbo run build --force
 pnpm audit:ui
 pnpm capture:evidence
+pnpm manifest:evidence
 ```
 
 The simulator defaults to `.state/run-<timestamp>` and capture supplies deterministic run IDs. The delivered repository history can be inspected through `scripts/git-local.sh` when the release archive includes its repository-local Git store.

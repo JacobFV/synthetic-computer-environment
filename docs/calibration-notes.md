@@ -25,7 +25,7 @@ The simulator was compared against three browser desktop projects at pinned revi
 
 - The Node simulation process—not `localStorage`—owns computer memory, processes, sockets, services, package databases, app installation records, collaboration state, and the VFS path/inode table.
 - Every disk payload is persisted under `.state/<run-id>/<computer>/<disk>/<inode-id>` and resolved through an explicit path table.
-- An installed application includes code and metadata in the VFS. Trusted browser-native application code can execute against a scoped SDK; host execution is a separate default-deny gateway.
+- An installed application includes code and metadata in the VFS. Trusted Seed JavaScript is loaded from that VFS package and executes in a restricted Node `vm` dispatcher; browser UI invokes its declared operations through the simulator API. Host execution is a separate default-deny gateway.
 - Slack and Teams are independent client/server products with separate DNS names, state, revisions, and polling streams. They never share or bridge messages unless a separately modeled integration is installed.
 - Shell, package-manager, Git, DNS, virtual HTTP/TCP, process, and file mutations all converge on the same kernel-owned state that graphical apps read.
 - Every high-fidelity claim is paired with an executable test, UI audit, trajectory event, persistent state diff, packet trace, or Playwright recording.

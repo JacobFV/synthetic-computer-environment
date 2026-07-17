@@ -75,7 +75,7 @@ const snapshot = await loadJson<{
   appCatalog?: unknown[];
   computers?: Array<{ installedApps?: unknown[] }>;
   packets?: unknown[];
-  applicationExecutions?: unknown[];
+  appExecutions?: unknown[];
 }>(path.join(evidenceRoot, 'runtime-snapshot.json'));
 const audit = await loadJson<{ inspected?: number; errors?: number; warnings?: number }>(path.resolve('artifacts/ui-audit-v3.json'));
 const countPrefix = (prefix: string, suffix?: string) => files.filter((file) => file.path.startsWith(prefix) && (!suffix || file.path.endsWith(suffix))).length;
@@ -96,7 +96,7 @@ const manifest = {
     catalogApplications: snapshot?.appCatalog?.length ?? 0,
     installedApplicationInstances: snapshot?.computers?.reduce((sum, computer) => sum + (computer.installedApps?.length ?? 0), 0) ?? 0,
     packetRecords: snapshot?.packets?.length ?? 0,
-    applicationExecutions: snapshot?.applicationExecutions?.length ?? 0,
+    applicationExecutions: snapshot?.appExecutions?.length ?? 0,
     uiAudit: audit,
     hashedFiles: files.length,
     hashedBytes: files.reduce((sum, file) => sum + file.bytes, 0),
