@@ -34,7 +34,8 @@ try {
 
   await copyPath('.vcs/git');
   await copyPath('artifacts/ui-audit-v3.json');
-  await copyPath('artifacts/evidence-v3', (source) => !source.includes(`${path.sep}recordings${path.sep}raw${path.sep}`));
+  const rawRecordingRoot = path.join(root, 'artifacts', 'evidence-v3', 'recordings', 'raw');
+  await copyPath('artifacts/evidence-v3', (source) => source !== rawRecordingRoot && !source.startsWith(`${rawRecordingRoot}${path.sep}`));
   await copyPath('output/diagrams');
   await copyPath('output/pdf/seed-computer-ecosystem-app-survey-v0.3.0.pdf');
   await copyPath('output/seed-computer-ecosystem-research-evidence-v0.3.0.pptx');
