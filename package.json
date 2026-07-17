@@ -1,0 +1,26 @@
+{
+  "name": "seed-computer-ecosystem",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "dev": "pnpm --filter @seed/simulator dev",
+    "build": "pnpm --filter @seed/simulator build",
+    "start": "pnpm --filter @seed/simulator start",
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "demo": "node --import tsx scripts/run-demo.ts",
+    "capture": "node --import tsx scripts/capture-demos.ts"
+    ,"capture:evidence": "node --import tsx scripts/capture-evidence.ts"
+  },
+  "devDependencies": {
+    "@seed/kernel": "workspace:*",
+    "@sparticuz/chromium": "^149.0.0",
+    "@types/node": "^24.0.0",
+    "playwright": "^1.58.2",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

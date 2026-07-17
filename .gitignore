@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.state/
+.browser-runtime/
+.playwright-browsers/
+.pnpm-home/
+.pnpm-store/
+.vcs/
+artifacts/
+output/
+upload/
+*.log
+*.tsbuildinfo
+apps/chatgpt-workspace/.next/
+apps/chatgpt-workspace/workspace.db*
