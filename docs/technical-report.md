@@ -611,7 +611,7 @@ The release validation and capture produced these measured results:
 | app portraits / portrait plates | 60 / 10 |
 | motion recordings | 7 |
 | production JS/CSS before gzip | 468.95 kB JavaScript / 118.97 kB CSS |
-| release archive bytes | pending final packaging <!-- METRIC:release_archive_size --> |
+| release archive size | approximately 76.6 MB as a compact ZIP; the build emits exact bytes and a SHA-256 sidecar <!-- METRIC:release_archive_size --> |
 
 ## 16. Trajectory schema and reproducibility
 
