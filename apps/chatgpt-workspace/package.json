@@ -1,5 +1,5 @@
 {
-  "name": "chatgpt-workspace-clone",
+  "name": "@seed/chatgpt-workspace",
   "version": "0.3.0",
   "private": true,
   "scripts": {

@@ -12,7 +12,8 @@
   "references": [
     { "path": "../../packages/protocol" },
     { "path": "../../packages/catalog" },
-    { "path": "../../packages/kernel" }
+    { "path": "../../packages/kernel" },
+    { "path": "../../ecosystems/seed-2026" }
   ],
   "include": ["src", "vite.config.ts"]
 }

@@ -1,7 +1,11 @@
 packages:
   - apps/*
   - packages/*
+  - ecosystems/*
+  - tooling/*
 onlyBuiltDependencies:
   - esbuild
+  - sharp
 allowBuilds:
   esbuild: true
+  sharp: true

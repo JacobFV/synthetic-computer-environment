@@ -157,7 +157,7 @@ export class ShellSession {
       if (command === 'ping') return this.ok(this.deps.network.ping(this.deps.spec.id, args.at(-1) ?? ''));
       if (['nslookup', 'dig', 'resolve-dnsname'].includes(command)) {
         const host = args.at(-1) ?? '';
-        const address = this.deps.network.resolve(host);
+        const address = this.deps.network.resolve(host, this.deps.spec.id);
         return address ? this.ok(`Server:  dns.seed.local\nAddress: 10.42.0.2\n\nName:    ${host}\nAddress: ${address}`) : this.fail(`** server can't find ${host}: NXDOMAIN`);
       }
       if (['curl', 'wget', 'invoke-webrequest', 'iwr'].includes(command)) {

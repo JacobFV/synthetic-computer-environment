@@ -1,0 +1,47 @@
+digraph SeedArchitecture {
+  graph [rankdir=TB, bgcolor="transparent", pad=0.22, nodesep=0.42, ranksep=0.68, splines=ortho, newrank=true, fontname="Inter"];
+  node [shape=rect, style="rounded,filled", fontname="Inter", fontsize=11, margin="0.18,0.12", color="#D9E1EA", penwidth=1.2, fillcolor="#FFFFFF", fontcolor="#172033"];
+  edge [color="#76839A", penwidth=1.35, arrowsize=0.68];
+
+  simulator [label="@seed/simulator\nNode authority + browser displays", fillcolor="#14213D", color="#14213D", fontcolor="#FFFFFF", width=3.1];
+  ecosystem [label="@seed/ecosystem-seed-2026\ncomputers · services · apps · policy", fillcolor="#DFF8EF", color="#75CDAA", width=3.1];
+
+  kernel [label="@seed/kernel\nVFS · processes · shells\npackages · Git · network\napplication runtime", fillcolor="#E8F1FF", color="#82AEE8", width=2.55];
+  surfaces [label="@seed/ui-surfaces\nproduct information\narchitecture + interactions", fillcolor="#F3ECFF", color="#B29AE5", width=2.55];
+  catalog [label="@seed/catalog\nsystem + ecosystem\napplication definitions", fillcolor="#FFF0E8", color="#EEA277", width=2.45];
+
+  mac [label="@seed/os-macos\nmacOS 26 profile"];
+  win [label="@seed/os-windows\nWindows 11 profile"];
+  ubuntu [label="@seed/os-ubuntu\nUbuntu 26.04 profile"];
+  appSdk [label="@seed/app-sdk\nmanifest + operation\nauthoring"];
+  osCore [label="@seed/os-core\nOS profile contract"];
+  protocol [label="@seed/protocol\nserializable boundary types", fillcolor="#172033", color="#172033", fontcolor="#FFFFFF", width=2.5];
+
+  { rank=same; kernel; surfaces; catalog }
+  { rank=same; mac; win; ubuntu; appSdk }
+  { rank=same; osCore }
+
+  kernel -> surfaces [style=invis, weight=20];
+  surfaces -> catalog [style=invis, weight=20];
+  mac -> win [style=invis, weight=20];
+  win -> ubuntu [style=invis, weight=20];
+  ubuntu -> appSdk [style=invis, weight=20];
+
+  simulator -> ecosystem [weight=8];
+  simulator -> kernel;
+  simulator -> surfaces;
+  ecosystem -> mac;
+  ecosystem -> win;
+  ecosystem -> ubuntu;
+  ecosystem -> catalog;
+  ecosystem -> surfaces;
+  kernel -> catalog;
+  kernel -> protocol;
+  surfaces -> protocol;
+  catalog -> appSdk;
+  appSdk -> protocol;
+  mac -> osCore;
+  win -> osCore;
+  ubuntu -> osCore;
+  osCore -> protocol;
+}

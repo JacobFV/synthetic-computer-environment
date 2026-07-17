@@ -5,6 +5,7 @@ dist/
 .playwright-browsers/
 .pnpm-home/
 .pnpm-store/
+.turbo/
 .vcs/
 artifacts/
 output/

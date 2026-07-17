@@ -1,8 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { seed2026Blueprint } from '@seed/ecosystem-seed-2026';
 import { SimulationRuntime } from '@seed/kernel';
 
-const runtime = new SimulationRuntime({ stateRoot: '.state', runId: process.env.SEED_RUN_ID ?? 'run-demo' });
+const runtime = new SimulationRuntime({ topology: seed2026Blueprint, stateRoot: '.state', runId: process.env.SEED_RUN_ID ?? 'run-demo' });
 await runtime.initialize();
 
 const steps = [

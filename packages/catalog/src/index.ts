@@ -1,155 +1,21 @@
-import type { AppManifest, AppServiceContract, OSKind } from '@seed/protocol';
+import type { AppManifest, OSKind } from '@seed/protocol';
+import { ecosystemApplications } from './definitions/ecosystem.js';
+import { systemApplications } from './definitions/system.js';
 
-const all: OSKind[] = ['macos', 'windows', 'ubuntu'];
+export { ecosystemApplications } from './definitions/ecosystem.js';
+export { systemApplications } from './definitions/system.js';
+export { app, allOperatingSystems, type CatalogAppInput } from './factory.js';
 
-type CatalogAppInput = Omit<AppManifest, 'operations' | 'serviceContracts' | 'runtime'> & Partial<Pick<AppManifest, 'operations' | 'serviceContracts' | 'runtime'>>;
+export const appCatalog: AppManifest[] = [...systemApplications, ...ecosystemApplications];
 
-const operationsByEntrypoint: Record<string, string[]> = {
-  'system://files': ['list', 'open', 'copy', 'move', 'rename', 'trash', 'restore', 'search'],
-  'system://terminal': ['execute', 'interrupt', 'clear', 'history'],
-  'system://settings': ['inspect', 'set-preference', 'set-network-policy'],
-  'system://editor': ['open', 'edit', 'save', 'save-as', 'find'],
-  'system://preview': ['open', 'zoom', 'rotate', 'annotate', 'export'],
-  'system://photos': ['browse', 'import', 'favorite', 'edit', 'export'],
-  'system://calculator': ['calculate', 'clear', 'copy-result'],
-  'system://calendar': ['list-events', 'create-event', 'update-event', 'delete-event'],
-  'system://mail': ['list-mailboxes', 'list-messages', 'read-message', 'compose', 'send', 'archive'],
-  'system://app-store': ['browse', 'search', 'inspect', 'install', 'update', 'uninstall'],
-  'app://browser': ['navigate', 'back', 'forward', 'reload', 'new-tab', 'close-tab', 'bookmark', 'download'],
-  'app://slack': ['list-channels', 'poll-messages', 'send-message', 'reply-thread', 'add-reaction'],
-  'app://teams': ['list-teams', 'list-channels', 'poll-messages', 'send-message', 'reply-thread', 'start-meeting'],
-  'app://chatgpt': ['new-chat', 'send-message', 'open-project', 'attach-file', 'run-tool'],
-  'app://vscode': ['open-folder', 'open-file', 'edit', 'save', 'search', 'run-task', 'source-control'],
-  'app://wireshark': ['capture', 'stop-capture', 'filter', 'inspect-packet', 'export-capture'],
-  'app://messages': ['list-conversations', 'send-message', 'add-reaction'],
-  'app://calls': ['list-meetings', 'start-call', 'join-call', 'mute', 'share-screen', 'end-call'],
-  'app://media': ['browse', 'open', 'play', 'pause', 'seek', 'queue'],
-  'app://maps': ['search-place', 'route', 'save-place'],
-  'app://tasks': ['list', 'create', 'update', 'complete', 'delete'],
-  'app://canvas': ['new-document', 'open', 'draw', 'undo', 'redo', 'save', 'export'],
-  'app://capture': ['capture-region', 'capture-window', 'annotate', 'save'],
-  'app://processes': ['list-processes', 'inspect-process', 'terminate-process'],
-  'app://packages': ['list', 'search', 'inspect', 'install', 'upgrade', 'remove'],
-  'app://git': ['open-repository', 'status', 'stage', 'commit', 'branch', 'fetch', 'pull', 'push'],
-  'app://containers': ['list-containers', 'list-images', 'start', 'stop', 'inspect', 'build'],
-  'app://api-client': ['new-request', 'send-request', 'save-request', 'set-environment'],
-  'app://design': ['new-document', 'open', 'select', 'transform', 'edit-properties', 'save', 'export'],
-  'app://documents': ['new-document', 'open', 'edit', 'save', 'search', 'export'],
-  'app://library': ['browse', 'install', 'launch', 'update', 'uninstall'],
-  'app://vault': ['unlock', 'lock', 'list-items', 'create-item', 'copy-field'],
-  'app://database': ['connect', 'browse-schema', 'query', 'commit', 'rollback', 'export'],
-};
-
-const cloudBackends: Record<string, { kind: AppServiceContract['kind']; host: string; auth: AppServiceContract['auth']; operations: string[] }> = {
-  slack: { kind: 'collaboration', host: 'slack.seed.local', auth: 'session', operations: ['list-channels', 'poll-messages', 'send-message'] },
-  teams: { kind: 'collaboration', host: 'teams.seed.local', auth: 'oauth', operations: ['list-teams', 'list-channels', 'poll-messages', 'send-message'] },
-  chatgpt: { kind: 'model-api', host: 'chatgpt.seed.local', auth: 'session', operations: ['chat', 'projects', 'tools'] },
-  'app-store': { kind: 'app-registry', host: 'appstore.seed.local', auth: 'session', operations: ['catalog', 'package', 'receipt'] },
-  store: { kind: 'app-registry', host: 'store.seed.local', auth: 'session', operations: ['catalog', 'package', 'receipt'] },
-  'app-center': { kind: 'app-registry', host: 'packages.seed.local', auth: 'none', operations: ['catalog', 'package', 'receipt'] },
-  mail: { kind: 'mail', host: 'mail.seed.local', auth: 'session', operations: ['mailboxes', 'messages', 'send'] },
-  outlook: { kind: 'mail', host: 'outlook.seed.local', auth: 'oauth', operations: ['mailboxes', 'messages', 'send', 'calendar'] },
-  calendar: { kind: 'calendar', host: 'calendar.seed.local', auth: 'session', operations: ['events', 'create', 'update'] },
-  messages: { kind: 'collaboration', host: 'messages.seed.local', auth: 'session', operations: ['conversations', 'send'] },
-  facetime: { kind: 'collaboration', host: 'facetime.seed.local', auth: 'session', operations: ['calls', 'presence'] },
-  music: { kind: 'media-catalog', host: 'music.seed.local', auth: 'session', operations: ['library', 'stream'] },
-  maps: { kind: 'cloud-data', host: 'maps.seed.local', auth: 'none', operations: ['places', 'routes'] },
-  figma: { kind: 'cloud-data', host: 'figma.seed.local', auth: 'oauth', operations: ['files', 'documents', 'presence'] },
-  notion: { kind: 'cloud-data', host: 'notion.seed.local', auth: 'oauth', operations: ['pages', 'databases', 'search'] },
-  linear: { kind: 'cloud-data', host: 'linear.seed.local', auth: 'oauth', operations: ['issues', 'projects', 'cycles'] },
-  discord: { kind: 'collaboration', host: 'discord.seed.local', auth: 'session', operations: ['guilds', 'channels', 'messages'] },
-  zoom: { kind: 'collaboration', host: 'zoom.seed.local', auth: 'oauth', operations: ['meetings', 'calls'] },
-  spotify: { kind: 'media-catalog', host: 'spotify.seed.local', auth: 'oauth', operations: ['library', 'search', 'stream'] },
-  steam: { kind: 'cloud-data', host: 'steam.seed.local', auth: 'session', operations: ['library', 'downloads', 'friends'] },
-  bitwarden: { kind: 'identity', host: 'bitwarden.seed.local', auth: 'session', operations: ['sync', 'unlock'] },
-  onepassword: { kind: 'identity', host: 'onepassword.seed.local', auth: 'session', operations: ['sync', 'unlock'] },
-};
-
-function serviceContractsFor(value: CatalogAppInput): AppServiceContract[] {
-  const backend = cloudBackends[value.id];
-  if (backend) return [{ id: `${value.id}-backend`, kind: backend.kind, host: backend.host, protocol: 'https', port: 443, auth: backend.auth, required: true, operations: backend.operations }];
-  if (value.capabilities.includes('network')) return [{
-    id: `${value.id}-network-client`, kind: 'virtual-network-client', host: '*', protocol: 'virtual', port: 0,
-    auth: 'none', required: true, operations: ['dns-resolve', 'connect', 'request'],
-  }];
-  return [];
+export function appsForOS(os: OSKind): AppManifest[] {
+  return appCatalog.filter((manifest) => manifest.supportedOS.includes(os));
 }
 
-const app = (value: CatalogAppInput): AppManifest => ({
-  ...value,
-  operations: value.operations ?? operationsByEntrypoint[value.entrypoint] ?? ['open', 'close'],
-  serviceContracts: value.serviceContracts ?? serviceContractsFor(value),
-  runtime: value.runtime ?? {
-    kind: value.entrypoint.startsWith('system://') ? 'system-component' : 'seed-js',
-    apiVersion: 1,
-    entryFile: 'main.seed.js',
-    stateSchema: `seed.app.${value.id}.v1`,
-  },
-});
+export function systemAppsForOS(os: OSKind): AppManifest[] {
+  return appsForOS(os).filter((manifest) => manifest.system);
+}
 
-export const appCatalog: AppManifest[] = [
-  app({ id: 'finder', name: 'Finder', version: '26.0', publisher: 'Seed Apple', description: 'Browse files, mounted disks, tags, and network locations.', icon: 'finder', supportedOS: ['macos'], entrypoint: 'system://files', packagePath: 'registry://apple/finder', system: true, capabilities: ['filesystem', 'network'], defaultSize: { width: 820, height: 560 } }),
-  app({ id: 'explorer', name: 'File Explorer', version: '26.0', publisher: 'Seed Microsoft', description: 'Browse local, removable, and network files.', icon: 'folder', supportedOS: ['windows'], entrypoint: 'system://files', packagePath: 'registry://microsoft/explorer', system: true, capabilities: ['filesystem', 'network'], defaultSize: { width: 840, height: 560 } }),
-  app({ id: 'nautilus', name: 'Files', version: '49.1', publisher: 'Seed Canonical', description: 'GNOME file and network location manager.', icon: 'folder', supportedOS: ['ubuntu'], entrypoint: 'system://files', packagePath: 'registry://ubuntu/nautilus', system: true, capabilities: ['filesystem', 'network'], defaultSize: { width: 820, height: 560 } }),
-  app({ id: 'terminal', name: 'Terminal', version: '26.0', publisher: 'Seed OS', description: 'A stateful zsh, PowerShell, or bash session backed by the simulation kernel.', icon: 'terminal', supportedOS: all, entrypoint: 'system://terminal', packagePath: 'registry://seed/terminal', system: true, capabilities: ['filesystem', 'network'], defaultSize: { width: 760, height: 480 } }),
-  app({ id: 'settings', name: 'Settings', version: '26.0', publisher: 'Seed OS', description: 'Computer, display, network, gateway, and privacy settings.', icon: 'settings', supportedOS: all, entrypoint: 'system://settings', packagePath: 'registry://seed/settings', system: true, capabilities: [], defaultSize: { width: 780, height: 560 } }),
-  app({ id: 'textedit', name: 'TextEdit', version: '26.0', publisher: 'Seed Apple', description: 'Plain and rich text editing.', icon: 'notes', supportedOS: ['macos'], entrypoint: 'system://editor', packagePath: 'registry://apple/textedit', system: true, fileAssociations: ['txt', 'md'], capabilities: ['filesystem'] }),
-  app({ id: 'notepad', name: 'Notepad', version: '11.2604', publisher: 'Seed Microsoft', description: 'Fast text editing with tabs.', icon: 'notes', supportedOS: ['windows'], entrypoint: 'system://editor', packagePath: 'registry://microsoft/notepad', system: true, fileAssociations: ['txt', 'md'], capabilities: ['filesystem'] }),
-  app({ id: 'gedit', name: 'Text Editor', version: '49.0', publisher: 'Seed GNOME', description: 'GNOME text editor.', icon: 'notes', supportedOS: ['ubuntu'], entrypoint: 'system://editor', packagePath: 'registry://ubuntu/gedit', system: true, fileAssociations: ['txt', 'md'], capabilities: ['filesystem'] }),
-  app({ id: 'preview', name: 'Preview', version: '26.0', publisher: 'Seed Apple', description: 'Image and PDF preview.', icon: 'preview', supportedOS: ['macos'], entrypoint: 'system://preview', packagePath: 'registry://apple/preview', system: true, capabilities: ['filesystem'] }),
-  app({ id: 'photos', name: 'Photos', version: '26.0', publisher: 'Seed OS', description: 'Photo library and image viewer.', icon: 'photos', supportedOS: ['macos', 'windows'], entrypoint: 'system://photos', packagePath: 'registry://seed/photos', system: true, capabilities: ['filesystem', 'camera'] }),
-  app({ id: 'calculator', name: 'Calculator', version: '26.0', publisher: 'Seed OS', description: 'Scientific and programmer calculator.', icon: 'calculator', supportedOS: all, entrypoint: 'system://calculator', packagePath: 'registry://seed/calculator', system: true, capabilities: [] }),
-  app({ id: 'calendar', name: 'Calendar', version: '26.0', publisher: 'Seed OS', description: 'Calendar and scheduled tasks.', icon: 'calendar', supportedOS: all, entrypoint: 'system://calendar', packagePath: 'registry://seed/calendar', system: true, capabilities: ['network', 'notifications'] }),
-  app({ id: 'mail', name: 'Mail', version: '26.0', publisher: 'Seed OS', description: 'Seed mail client.', icon: 'mail', supportedOS: all, entrypoint: 'system://mail', packagePath: 'registry://seed/mail', system: true, capabilities: ['network', 'notifications'] }),
-  app({ id: 'app-store', name: 'App Store', version: '26.0', publisher: 'Seed Apple', description: 'Discover and install notarized macOS applications from appstore.seed.local.', icon: 'appstore', supportedOS: ['macos'], entrypoint: 'system://app-store', packagePath: 'registry://apple/app-store', system: true, capabilities: ['filesystem', 'network'], defaultSize: { width: 900, height: 600 } }),
-  app({ id: 'store', name: 'Microsoft Store', version: '22606', publisher: 'Seed Microsoft', description: 'Discover and install Windows applications.', icon: 'store', supportedOS: ['windows'], entrypoint: 'system://app-store', packagePath: 'registry://microsoft/store', system: true, capabilities: ['filesystem', 'network'] }),
-  app({ id: 'app-center', name: 'App Center', version: '26.04', publisher: 'Seed Canonical', description: 'Install snap and deb-style app packages.', icon: 'store', supportedOS: ['ubuntu'], entrypoint: 'system://app-store', packagePath: 'registry://ubuntu/app-center', system: true, capabilities: ['filesystem', 'network'] }),
-  app({ id: 'chromium', name: 'Chromium', version: '140.0', publisher: 'The Chromium Authors', description: 'Browser for the seed internet and policy-gated real internet.', icon: 'chromium', supportedOS: all, entrypoint: 'app://browser', packagePath: 'registry://seed/chromium', capabilities: ['filesystem', 'network', 'camera', 'microphone'], defaultSize: { width: 940, height: 620 } }),
-  app({ id: 'slack', name: 'Slack', version: '5.0.26', publisher: 'Salesforce', description: 'Seed workspace messaging with shared channels across all computers.', icon: 'slack', supportedOS: all, entrypoint: 'app://slack', packagePath: 'registry://seed/slack', capabilities: ['filesystem', 'network', 'notifications', 'camera', 'microphone'], defaultSize: { width: 920, height: 620 } }),
-  app({ id: 'teams', name: 'Microsoft Teams', version: '26070', publisher: 'Microsoft', description: 'Team messaging and calls.', icon: 'teams', supportedOS: ['macos', 'windows'], entrypoint: 'app://teams', packagePath: 'registry://seed/teams', capabilities: ['filesystem', 'network', 'notifications', 'camera', 'microphone'], defaultSize: { width: 920, height: 620 } }),
-  app({ id: 'chatgpt', name: 'ChatGPT', version: '0.3.0', publisher: 'OpenAI-compatible seed client', description: 'Consumer Chat and professional Work surfaces, adapted from the supplied full-stack workspace clone.', icon: 'chatgpt', supportedOS: ['macos'], entrypoint: 'app://chatgpt', packagePath: 'workspace://apps/chatgpt-workspace', capabilities: ['filesystem', 'network', 'notifications', 'camera', 'microphone'], defaultSize: { width: 980, height: 680 } }),
-  app({ id: 'vscode', name: 'Visual Studio Code', version: '1.108', publisher: 'Microsoft', description: 'Code editing and integrated terminal for seed projects.', icon: 'vscode', supportedOS: all, entrypoint: 'app://vscode', packagePath: 'registry://seed/vscode', capabilities: ['filesystem', 'network'], defaultSize: { width: 1000, height: 680 } }),
-  app({ id: 'wireshark', name: 'Wireshark', version: '4.6', publisher: 'Wireshark Foundation', description: 'Inspect packet traces emitted by the simulation fabric.', icon: 'wireshark', supportedOS: all, entrypoint: 'app://wireshark', packagePath: 'registry://seed/wireshark', capabilities: ['filesystem', 'network'], defaultSize: { width: 980, height: 620 } }),
-  app({ id: 'safari', name: 'Safari', version: '26.0', publisher: 'Seed Apple', description: 'Native macOS browser for the virtual and gated external internet.', icon: 'safari', supportedOS: ['macos'], entrypoint: 'app://browser', packagePath: 'registry://apple/safari', system: true, capabilities: ['filesystem', 'network', 'camera', 'microphone'] }),
-  app({ id: 'edge', name: 'Microsoft Edge', version: '140.0', publisher: 'Microsoft', description: 'Windows browser with virtual network integration.', icon: 'edge', supportedOS: ['windows'], entrypoint: 'app://browser', packagePath: 'registry://microsoft/edge', system: true, capabilities: ['filesystem', 'network', 'camera', 'microphone'] }),
-  app({ id: 'messages', name: 'Messages', version: '26.0', publisher: 'Seed Apple', description: 'macOS-style conversations and notifications.', icon: 'messages', supportedOS: ['macos'], entrypoint: 'app://messages', packagePath: 'registry://apple/messages', system: true, capabilities: ['network', 'notifications'] }),
-  app({ id: 'facetime', name: 'FaceTime', version: '26.0', publisher: 'Seed Apple', description: 'Camera and call surface backed by simulated peripherals.', icon: 'facetime', supportedOS: ['macos'], entrypoint: 'app://calls', packagePath: 'registry://apple/facetime', system: true, capabilities: ['network', 'notifications', 'camera', 'microphone'] }),
-  app({ id: 'music', name: 'Music', version: '26.0', publisher: 'Seed Apple', description: 'Music library and playback state.', icon: 'music', supportedOS: ['macos'], entrypoint: 'app://media', packagePath: 'registry://apple/music', system: true, capabilities: ['filesystem', 'network'] }),
-  app({ id: 'maps', name: 'Maps', version: '26.0', publisher: 'Seed Apple', description: 'Map search and route-planning surface.', icon: 'maps', supportedOS: ['macos'], entrypoint: 'app://maps', packagePath: 'registry://apple/maps', system: true, capabilities: ['network'] }),
-  app({ id: 'reminders', name: 'Reminders', version: '26.0', publisher: 'Seed Apple', description: 'Lists, due dates, and notification-backed tasks.', icon: 'reminders', supportedOS: ['macos'], entrypoint: 'app://tasks', packagePath: 'registry://apple/reminders', system: true, capabilities: ['notifications'] }),
-  app({ id: 'paint', name: 'Paint', version: '11.2605', publisher: 'Seed Microsoft', description: 'Raster sketching and image editing.', icon: 'paint', supportedOS: ['windows'], entrypoint: 'app://canvas', packagePath: 'registry://microsoft/paint', system: true, capabilities: ['filesystem'] }),
-  app({ id: 'snipping-tool', name: 'Snipping Tool', version: '11.2605', publisher: 'Seed Microsoft', description: 'Screen capture and annotation.', icon: 'snipping', supportedOS: ['windows'], entrypoint: 'app://capture', packagePath: 'registry://microsoft/snipping-tool', system: true, capabilities: ['filesystem'] }),
-  app({ id: 'task-manager', name: 'Task Manager', version: '11.2605', publisher: 'Seed Microsoft', description: 'Process, performance, startup, and service inspection.', icon: 'taskmanager', supportedOS: ['windows'], entrypoint: 'app://processes', packagePath: 'registry://microsoft/task-manager', system: true, capabilities: [] }),
-  app({ id: 'outlook', name: 'Outlook', version: '2606', publisher: 'Microsoft', description: 'Mail and calendar workspace for Windows.', icon: 'outlook', supportedOS: ['windows'], entrypoint: 'system://mail', packagePath: 'registry://microsoft/outlook', system: true, capabilities: ['network', 'notifications'] }),
-  app({ id: 'system-monitor', name: 'System Monitor', version: '49.0', publisher: 'Seed GNOME', description: 'Linux process and resource inspection.', icon: 'systemmonitor', supportedOS: ['ubuntu'], entrypoint: 'app://processes', packagePath: 'registry://ubuntu/system-monitor', system: true, capabilities: [] }),
-  app({ id: 'software-updater', name: 'Software Updater', version: '26.04', publisher: 'Seed Canonical', description: 'APT, snap, and firmware update surface.', icon: 'updater', supportedOS: ['ubuntu'], entrypoint: 'app://packages', packagePath: 'registry://ubuntu/software-updater', system: true, capabilities: ['filesystem', 'network'] }),
-  app({ id: 'document-viewer', name: 'Document Viewer', version: '49.0', publisher: 'Seed GNOME', description: 'PDF and document reading.', icon: 'document', supportedOS: ['ubuntu'], entrypoint: 'system://preview', packagePath: 'registry://ubuntu/evince', system: true, capabilities: ['filesystem'] }),
-  app({ id: 'rhythmbox', name: 'Rhythmbox', version: '3.4.8', publisher: 'GNOME', description: 'Ubuntu music library and playback.', icon: 'music', supportedOS: ['ubuntu'], entrypoint: 'app://media', packagePath: 'registry://ubuntu/rhythmbox', system: true, capabilities: ['filesystem', 'network'] }),
-  app({ id: 'package-center', name: 'Package Center', version: '1.0.0', publisher: 'Seed Project', description: 'Inspect native and language package-manager state on one computer.', icon: 'packages', supportedOS: all, entrypoint: 'app://packages', packagePath: 'registry://seed/package-center', capabilities: ['filesystem', 'network'], defaultSize: { width: 900, height: 620 } }),
-  app({ id: 'firefox', name: 'Firefox', version: '141.0', publisher: 'Mozilla', description: 'Independent browser for virtual and gated external services.', icon: 'firefox', supportedOS: all, entrypoint: 'app://browser', packagePath: 'registry://mozilla/firefox', capabilities: ['filesystem', 'network', 'camera', 'microphone'] }),
-  app({ id: 'github-desktop', name: 'GitHub Desktop', version: '3.5', publisher: 'GitHub', description: 'Repository, branch, commit, and remote workflows over simulated git state.', icon: 'github', supportedOS: ['macos', 'windows'], entrypoint: 'app://git', packagePath: 'registry://github/desktop', capabilities: ['filesystem', 'network'], defaultSize: { width: 940, height: 620 } }),
-  app({ id: 'gitkraken', name: 'GitKraken', version: '11.2', publisher: 'GitKraken', description: 'Cross-platform visual git client.', icon: 'gitkraken', supportedOS: all, entrypoint: 'app://git', packagePath: 'registry://gitkraken/client', capabilities: ['filesystem', 'network'] }),
-  app({ id: 'docker-desktop', name: 'Docker Desktop', version: '4.52', publisher: 'Docker', description: 'Container, image, volume, and virtual network dashboard.', icon: 'docker', supportedOS: all, entrypoint: 'app://containers', packagePath: 'registry://docker/desktop', capabilities: ['filesystem', 'network'], defaultSize: { width: 960, height: 640 } }),
-  app({ id: 'postman', name: 'Postman', version: '11.58', publisher: 'Postman', description: 'HTTP collection editor and virtual service client.', icon: 'postman', supportedOS: all, entrypoint: 'app://api-client', packagePath: 'registry://postman/desktop', capabilities: ['filesystem', 'network'] }),
-  app({ id: 'figma', name: 'Figma', version: '126', publisher: 'Figma', description: 'Collaborative design canvas and inspect surface.', icon: 'figma', supportedOS: ['macos', 'windows'], entrypoint: 'app://design', packagePath: 'registry://figma/desktop', capabilities: ['filesystem', 'network', 'notifications'] }),
-  app({ id: 'notion', name: 'Notion', version: '4.8', publisher: 'Notion', description: 'Workspace documents, databases, and project notes.', icon: 'notion', supportedOS: ['macos', 'windows'], entrypoint: 'app://documents', packagePath: 'registry://notion/desktop', capabilities: ['filesystem', 'network', 'notifications'] }),
-  app({ id: 'linear', name: 'Linear', version: '1.28', publisher: 'Linear', description: 'Issues, projects, cycles, and engineering roadmaps.', icon: 'linear', supportedOS: ['macos', 'windows'], entrypoint: 'app://tasks', packagePath: 'registry://linear/desktop', capabilities: ['network', 'notifications'] }),
-  app({ id: 'discord', name: 'Discord', version: '0.0.115', publisher: 'Discord', description: 'Community text, voice, and video channels.', icon: 'discord', supportedOS: all, entrypoint: 'app://messages', packagePath: 'registry://discord/desktop', capabilities: ['filesystem', 'network', 'notifications', 'camera', 'microphone'] }),
-  app({ id: 'zoom', name: 'Zoom Workplace', version: '6.6', publisher: 'Zoom', description: 'Meetings, team chat, and shared whiteboards.', icon: 'zoom', supportedOS: all, entrypoint: 'app://calls', packagePath: 'registry://zoom/workplace', capabilities: ['filesystem', 'network', 'notifications', 'camera', 'microphone'] }),
-  app({ id: 'spotify', name: 'Spotify', version: '1.2.70', publisher: 'Spotify', description: 'Streaming music library and playback controls.', icon: 'spotify', supportedOS: all, entrypoint: 'app://media', packagePath: 'registry://spotify/desktop', capabilities: ['filesystem', 'network'] }),
-  app({ id: 'obsidian', name: 'Obsidian', version: '1.9', publisher: 'Dynalist', description: 'Local Markdown knowledge base over the VFS.', icon: 'obsidian', supportedOS: all, entrypoint: 'app://documents', packagePath: 'registry://obsidian/desktop', capabilities: ['filesystem'] }),
-  app({ id: 'vlc', name: 'VLC', version: '3.0.22', publisher: 'VideoLAN', description: 'Local and streamed media playback.', icon: 'vlc', supportedOS: all, entrypoint: 'app://media', packagePath: 'registry://videolan/vlc', capabilities: ['filesystem', 'network'] }),
-  app({ id: 'blender', name: 'Blender', version: '4.5', publisher: 'Blender Foundation', description: '3D modeling, animation, rendering, and simulation.', icon: 'blender', supportedOS: all, entrypoint: 'app://design', packagePath: 'registry://blender/blender', capabilities: ['filesystem'] }),
-  app({ id: 'gimp', name: 'GIMP', version: '3.2', publisher: 'The GIMP Team', description: 'Layered raster image editing.', icon: 'gimp', supportedOS: all, entrypoint: 'app://canvas', packagePath: 'registry://gimp/gimp', capabilities: ['filesystem'] }),
-  app({ id: 'libreoffice', name: 'LibreOffice', version: '26.2', publisher: 'The Document Foundation', description: 'Documents, spreadsheets, and presentations.', icon: 'libreoffice', supportedOS: all, entrypoint: 'app://documents', packagePath: 'registry://libreoffice/stable', capabilities: ['filesystem'] }),
-  app({ id: 'audacity', name: 'Audacity', version: '4.0', publisher: 'Muse Group', description: 'Multitrack audio recording and editing.', icon: 'audacity', supportedOS: all, entrypoint: 'app://media', packagePath: 'registry://audacity/audacity', capabilities: ['filesystem', 'microphone'] }),
-  app({ id: 'steam', name: 'Steam', version: '2026.06', publisher: 'Valve', description: 'Game library, downloads, friends, and cloud state.', icon: 'steam', supportedOS: all, entrypoint: 'app://library', packagePath: 'registry://valve/steam', capabilities: ['filesystem', 'network', 'notifications'] }),
-  app({ id: 'bitwarden', name: 'Bitwarden', version: '2026.7', publisher: 'Bitwarden', description: 'Password-vault interface with locked secret boundaries.', icon: 'bitwarden', supportedOS: all, entrypoint: 'app://vault', packagePath: 'registry://bitwarden/desktop', capabilities: ['network'] }),
-  app({ id: 'onepassword', name: '1Password', version: '8.11', publisher: 'AgileBits', description: 'Vault, passkey, and secure-item workflows.', icon: 'onepassword', supportedOS: all, entrypoint: 'app://vault', packagePath: 'registry://1password/desktop', capabilities: ['network'] }),
-  app({ id: 'cursor', name: 'Cursor', version: '1.5', publisher: 'Anysphere', description: 'AI-assisted code editor over simulated projects.', icon: 'cursor', supportedOS: all, entrypoint: 'app://vscode', packagePath: 'registry://cursor/editor', capabilities: ['filesystem', 'network'] }),
-  app({ id: 'dbeaver', name: 'DBeaver', version: '25.2', publisher: 'DBeaver Corp', description: 'Database connection and query workspace.', icon: 'dbeaver', supportedOS: all, entrypoint: 'app://database', packagePath: 'registry://dbeaver/community', capabilities: ['filesystem', 'network'] }),
-];
-
-export function appsForOS(os: OSKind): AppManifest[] { return appCatalog.filter((manifest) => manifest.supportedOS.includes(os)); }
-export function systemAppsForOS(os: OSKind): AppManifest[] { return appsForOS(os).filter((manifest) => manifest.system); }
-export function catalogApp(id: string): AppManifest | undefined { return appCatalog.find((manifest) => manifest.id === id); }
+export function catalogApp(id: string): AppManifest | undefined {
+  return appCatalog.find((manifest) => manifest.id === id);
+}

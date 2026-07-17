@@ -1,25 +1,37 @@
 {
   "name": "seed-computer-ecosystem",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "dev": "pnpm --filter @seed/simulator dev",
-    "build": "pnpm --filter @seed/simulator build",
+    "dev": "turbo run dev --filter=@seed/simulator --parallel",
+    "build": "turbo run build --filter=@seed/simulator...",
+    "build:all": "turbo run build",
     "start": "pnpm --filter @seed/simulator start",
-    "test": "vitest run",
-    "typecheck": "tsc -b",
+    "test": "turbo run test --filter=@seed/kernel",
+    "test:browser": "node --import tsx scripts/test-browser-execution.ts",
+    "typecheck": "turbo run typecheck",
+    "check": "pnpm check:boundaries && pnpm typecheck && pnpm test",
+    "check:boundaries": "node --import tsx tooling/architecture/src/check-boundaries.ts",
+    "architecture": "node --import tsx tooling/architecture/src/print-architecture.ts",
     "demo": "node --import tsx scripts/run-demo.ts",
-    "capture": "node --import tsx scripts/capture-demos.ts"
-    ,"capture:evidence": "node --import tsx scripts/capture-evidence.ts"
+    "capture": "node --import tsx scripts/capture-demos.ts",
+    "capture:evidence": "node --import tsx scripts/capture-evidence.ts",
+    "manifest:evidence": "node --import tsx scripts/build-evidence-manifest.ts",
+    "render:diagrams": "node --import tsx scripts/render-diagrams.ts",
+    "survey:pdf": "python3 scripts/generate-app-survey.py",
+    "audit:ui": "node --import tsx scripts/audit-ui.ts"
   },
   "devDependencies": {
+    "@hpcc-js/wasm-graphviz": "^1.26.0",
+    "@seed/ecosystem-seed-2026": "workspace:*",
     "@seed/kernel": "workspace:*",
     "@sparticuz/chromium": "^149.0.0",
     "@types/node": "^24.0.0",
     "playwright": "^1.58.2",
     "tsx": "^4.20.0",
+    "turbo": "^2.10.5",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
   }

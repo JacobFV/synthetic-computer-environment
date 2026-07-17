@@ -2,8 +2,17 @@
   "files": [],
   "references": [
     { "path": "packages/protocol" },
-    { "path": "packages/kernel" },
+    { "path": "packages/app-sdk" },
+    { "path": "packages/os-core" },
+    { "path": "packages/os-macos" },
+    { "path": "packages/os-windows" },
+    { "path": "packages/os-ubuntu" },
     { "path": "packages/catalog" },
+    { "path": "packages/kernel" },
+    { "path": "packages/ui-surfaces" },
+    { "path": "ecosystems/seed-2026" },
+    { "path": "tooling/architecture" },
+    { "path": "tooling/evidence" },
     { "path": "apps/simulator" }
   ]
 }

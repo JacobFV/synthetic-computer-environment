@@ -104,7 +104,7 @@ export class CollaborationService {
   }
 }
 
-export function createSeedCollaborationServices(): Map<CollaborationServiceId, CollaborationService> {
+export function createSeedCollaborationServices(hosts: Partial<Record<CollaborationServiceId, string>> = {}): Map<CollaborationServiceId, CollaborationService> {
   const sharedShape = [
     { id: 'general', name: 'general', displayName: 'General', memberCount: 12 },
     { id: 'agent-runs', name: 'agent-runs', displayName: 'Agent Runs', memberCount: 9 },
@@ -112,11 +112,11 @@ export function createSeedCollaborationServices(): Map<CollaborationServiceId, C
   ];
   return new Map([
     ['slack', new CollaborationService({
-      id: 'slack', host: 'slack.seed.local', workspaceId: 'T-SEEDLAB', workspaceName: 'Seed Lab',
+      id: 'slack', host: hosts.slack ?? 'slack.seed.local', workspaceId: 'T-SEEDLAB', workspaceName: 'Seed Lab',
       channels: [...sharedShape, { id: 'random', name: 'random', displayName: 'Random', memberCount: 12 }],
     })],
     ['teams', new CollaborationService({
-      id: 'teams', host: 'teams.seed.local', workspaceId: 'team-seed-engineering', workspaceName: 'Seed Engineering',
+      id: 'teams', host: hosts.teams ?? 'teams.seed.local', workspaceId: 'team-seed-engineering', workspaceName: 'Seed Engineering',
       channels: sharedShape,
     })],
   ]);

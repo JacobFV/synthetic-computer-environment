@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@hpcc-js/wasm-graphviz':
+        specifier: ^1.26.0
+        version: 1.26.0
+      '@seed/ecosystem-seed-2026':
+        specifier: workspace:*
+        version: link:ecosystems/seed-2026
       '@seed/kernel':
         specifier: workspace:*
         version: link:packages/kernel
@@ -23,6 +29,9 @@ importers:
       tsx:
         specifier: ^4.20.0
         version: 4.23.1
+      turbo:
+        specifier: ^2.10.5
+        version: 2.10.5
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
@@ -99,12 +108,27 @@ importers:
       '@seed/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
+      '@seed/ecosystem-seed-2026':
+        specifier: workspace:*
+        version: link:../../ecosystems/seed-2026
       '@seed/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
+      '@seed/os-macos':
+        specifier: workspace:*
+        version: link:../../packages/os-macos
+      '@seed/os-ubuntu':
+        specifier: workspace:*
+        version: link:../../packages/os-ubuntu
+      '@seed/os-windows':
+        specifier: workspace:*
+        version: link:../../packages/os-windows
       '@seed/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@seed/ui-surfaces':
+        specifier: workspace:*
+        version: link:../../packages/ui-surfaces
       '@vitejs/plugin-react':
         specifier: ^5.0.4
         version: 5.2.0(vite@7.3.6(@types/node@24.13.3)(tsx@4.23.1))
@@ -134,8 +158,41 @@ importers:
         specifier: ^8.5.0
         version: 8.18.1
 
+  ecosystems/seed-2026:
+    dependencies:
+      '@seed/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
+      '@seed/os-core':
+        specifier: workspace:*
+        version: link:../../packages/os-core
+      '@seed/os-macos':
+        specifier: workspace:*
+        version: link:../../packages/os-macos
+      '@seed/os-ubuntu':
+        specifier: workspace:*
+        version: link:../../packages/os-ubuntu
+      '@seed/os-windows':
+        specifier: workspace:*
+        version: link:../../packages/os-windows
+      '@seed/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
+      '@seed/ui-surfaces':
+        specifier: workspace:*
+        version: link:../../packages/ui-surfaces
+
+  packages/app-sdk:
+    dependencies:
+      '@seed/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
   packages/catalog:
     dependencies:
+      '@seed/app-sdk':
+        specifier: workspace:*
+        version: link:../app-sdk
       '@seed/protocol':
         specifier: workspace:*
         version: link:../protocol
@@ -149,7 +206,57 @@ importers:
         specifier: workspace:*
         version: link:../protocol
 
+  packages/os-core:
+    dependencies:
+      '@seed/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  packages/os-macos:
+    dependencies:
+      '@seed/os-core':
+        specifier: workspace:*
+        version: link:../os-core
+      '@seed/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  packages/os-ubuntu:
+    dependencies:
+      '@seed/os-core':
+        specifier: workspace:*
+        version: link:../os-core
+      '@seed/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  packages/os-windows:
+    dependencies:
+      '@seed/os-core':
+        specifier: workspace:*
+        version: link:../os-core
+      '@seed/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
   packages/protocol: {}
+
+  packages/ui-surfaces:
+    dependencies:
+      '@seed/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  tooling/architecture: {}
+
+  tooling/evidence:
+    dependencies:
+      '@seed/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
+      '@seed/ecosystem-seed-2026':
+        specifier: workspace:*
+        version: link:../../ecosystems/seed-2026
 
 packages:
 
@@ -422,6 +529,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@hpcc-js/wasm-graphviz@1.26.0':
+    resolution: {integrity: sha512-nY6xgBxjYNg/aND8DDcftwmF1Xtf2ESD//+o8Fbi/qisGukTK4dYoj0Tk73aKxAGltuyHIJVf9T4jPfmn0uz9A==}
 
   '@iconify-json/fluent-color@1.2.21':
     resolution: {integrity: sha512-VETjGx7BMpVsCR3HV5g5t6oBGZ92XKzIRClS5xUvDn1YHAkQTF9OyF/aFdtxYOC8JROoI1SNO/Ql6jZeK7mroA==}
@@ -881,6 +991,36 @@ packages:
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
+
+  '@turbo/darwin-64@2.10.5':
+    resolution: {integrity: sha512-ENvPwy3x5yS7MwNYHeWjqOBXkwIMp39Pd+/zXC6PoiNzF8EIvvLZOZZ+ny6L9x4WgS5vxUii2LM5gM+zjPdnWw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@turbo/darwin-arm64@2.10.5':
+    resolution: {integrity: sha512-rqROo9zsF/P9RqsdtbLD1nFJicjSrYyvQ9kNJC38AbxA3pAs6VAlATvtvOFx7bqOv6vicf20SP9kF33avJjy2w==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@turbo/linux-64@2.10.5':
+    resolution: {integrity: sha512-RoSSiNFUxi27zLJuM9F6GyWWjHgLch9t6nwD6K0FkXRirZkTLlzIj6IhFnK8H9++nefLtdFqylE4vGjZAv6AAA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@turbo/linux-arm64@2.10.5':
+    resolution: {integrity: sha512-4ZComcpzmHGmVynQqvvi+iZOSq/tBvY1SltXB8g4NZRsrA01W8E+yRL8RNM+PLoyWsrCnJa8xa+DkWkv+xg4iQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@turbo/windows-64@2.10.5':
+    resolution: {integrity: sha512-eL2Iyj4DbMINq1Sr1w0iAi6nAiZOF16KSlRGwCJpVh+IWZeY33MAsLHVOBMj1xoFtncVJXclCVpTPL2nBoYkFg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@turbo/windows-arm64@2.10.5':
+    resolution: {integrity: sha512-sog+wP+8YSJrdWZ/rUJg8xghVTrwoG+BrSlDQpnK5fzSgJHn1INRWXbVWRH0d3vX8dBI01E3yxXRre9Dn+OXQA==}
+    cpu: [arm64]
+    os: [win32]
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -1646,6 +1786,10 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  turbo@2.10.5:
+    resolution: {integrity: sha512-07Y/C7OUp23l4P92PJoYtFNbHjLhftrZH5Ce7dbczS4kX2Re+wtbXvZLoxn/pUtzgsQaRCBaRuZPJp4zmAn0WQ==}
+    hasBin: true
+
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
@@ -2018,6 +2162,8 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
+  '@hpcc-js/wasm-graphviz@1.26.0': {}
+
   '@iconify-json/fluent-color@1.2.21':
     dependencies:
       '@iconify/types': 2.0.0
@@ -2337,6 +2483,24 @@ snapshots:
   '@swc/helpers@0.5.15':
     dependencies:
       tslib: 2.8.1
+
+  '@turbo/darwin-64@2.10.5':
+    optional: true
+
+  '@turbo/darwin-arm64@2.10.5':
+    optional: true
+
+  '@turbo/linux-64@2.10.5':
+    optional: true
+
+  '@turbo/linux-arm64@2.10.5':
+    optional: true
+
+  '@turbo/windows-64@2.10.5':
+    optional: true
+
+  '@turbo/windows-arm64@2.10.5':
+    optional: true
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -3412,6 +3576,15 @@ snapshots:
       esbuild: 0.28.1
     optionalDependencies:
       fsevents: 2.3.3
+
+  turbo@2.10.5:
+    optionalDependencies:
+      '@turbo/darwin-64': 2.10.5
+      '@turbo/darwin-arm64': 2.10.5
+      '@turbo/linux-64': 2.10.5
+      '@turbo/linux-arm64': 2.10.5
+      '@turbo/windows-64': 2.10.5
+      '@turbo/windows-arm64': 2.10.5
 
   typescript@5.9.3: {}
 

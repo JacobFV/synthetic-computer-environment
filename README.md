@@ -1,10 +1,10 @@
-# seed computer ecosystem
+# Seed Computer Ecosystem
 
-A single-process, browser-rendered computer simulation runtime for collecting deterministic computer-use trajectories. It boots macOS-, Windows-, and Ubuntu-shaped computers over one typed kernel, gives them persistent virtual disks, process tables, stateful shell dialects, 20 package-manager families, VFS-backed Git, a shared DNS/service/collaboration fabric, policy-gated real-internet gateways, 60 manifest-backed applications, and headless displays.
+Seed is a single-authority, browser-rendered computer ecosystem for computer-use research. One Node.js simulation process boots typed macOS 26, Windows 11 26H2, and Ubuntu 26.04 computers; owns their inode-backed disks, processes, applications, repositories, package databases, sockets, DNS, services, and gateways; and projects each display through a real Chromium page.
 
-![48 non-terminal macOS, Windows, and Ubuntu states](artifacts/evidence-v2/48-desktop-states-grid.png)
+The 2026 reference seed contains four computers, three interactive desktops, eight independent services, 60 manifest-backed applications, 46 product-specific surface contracts, 25 package-manager families, VFS-backed Git, and a validated 48-workflow browser evidence suite. A terminal is an application, not a desktop requirement.
 
-## run
+## Run
 
 Requirements: Node.js 24+ and pnpm 11+.
 
@@ -15,89 +15,104 @@ pnpm dev
 
 Open `http://127.0.0.1:4317`.
 
-Useful commands:
-
 ```bash
-pnpm typecheck       # strict project-reference typecheck
-pnpm test            # kernel integration tests
-pnpm build           # production browser build
-pnpm demo            # deterministic cross-computer contract + JSONL evidence
-pnpm capture         # boot runtime and take real 1440×900 screenshots
-pnpm capture:evidence # 48-state grid + four annotated interaction recordings
+pnpm check:boundaries  # validate the workspace dependency graph
+pnpm typecheck         # strict typecheck across every workspace
+pnpm test              # vertical kernel/runtime integration suite
+pnpm build:all         # production-build every deployable/package
+pnpm audit:ui          # inspect every installed app in real Chromium
+pnpm demo              # deterministic cross-computer contract + JSONL
+pnpm capture:evidence  # workflow states, app atlas, icon walls, videos
+pnpm manifest:evidence # hash and measure the release evidence
 ```
 
-Set `SEED_RUN_ID` to resume a named disk state. Otherwise the server defaults to `run-{timestamp}`. Persistent files are stored at:
+Set `SEED_RUN_ID` to resume a named world. Otherwise the server creates `run-<timestamp>`. Virtual disks use the requested inode-blob layout:
 
 ```text
-.state/<run-id>/<computer>/<disk>/<inode-id>
 .state/<run-id>/<computer>/file-table.json
+.state/<run-id>/<computer>/<disk>/<inode-id>
 ```
 
-## monorepo
+## Monorepo authority map
+
+The repository is a pnpm workspace scheduled by Turborepo. Packages are separated by authority so new OS profiles, app distributions, and ecosystem seeds do not accumulate in the simulator entry point.
 
 ```text
 apps/
-  simulator/          one Node runtime + Vite/React display client
-  chatgpt-workspace/  supplied full-stack ChatGPT workspace clone v0.3.0
+  simulator/          Node HTTP/WebSocket authority + React displays
+  chatgpt-workspace/  supplied full-stack ChatGPT workspace clone
+ecosystems/
+  seed-2026/          concrete computers, services, apps, DNS, gateways
 packages/
-  protocol/           computer, app, inode, process, package, Git, socket, packet, gateway types
-  kernel/             VFS, processes, shells, software/Git, network fabric, runtime, recorder
-  catalog/            60 system and ecosystem application manifests
-scripts/              deterministic demo and Playwright-compatible capture runner
-tests/                vertical integration contracts
-docs/                 architecture and technical report
+  protocol/           serializable cross-layer contracts
+  app-sdk/            manifest, operation, and package-authoring SDK
+  os-core/            operating-system profile contract
+  os-macos/           macOS profile, services, paths, managers, system apps
+  os-windows/         Windows profile
+  os-ubuntu/          Ubuntu/GNOME profile
+  catalog/            modular system and ecosystem app definitions
+  kernel/             VFS, process, shell, software, Git, network, app runtime
+  ui-surfaces/        product information architecture and interaction contracts
+tooling/
+  architecture/       boundary/cycle validation and graph generation
+  evidence/           typed workflow plan and topology-install validation
+scripts/              deterministic demos, capture, UI audit, local Git wrapper
+tests/                vertical runtime contracts
+docs/                 architecture, shell contract, fidelity spec, report
 ```
 
-## try it in a shell
+`@seed/kernel` consumes a generic serialized `SimulationTopology`; it does not import the reference ecosystem. `@seed/ecosystem-seed-2026` selects exact computers, OS profiles, installed app sets, independent services, DNS records, and gateway policy. See [docs/architecture.md](docs/architecture.md).
 
-Each terminal is stateful and selects zsh, PowerShell, or bash syntax from its computer spec.
+## Applications are VFS packages
+
+Installing an application materializes its manifest, package metadata, platform registration, receipt, state directory, and executable Seed JavaScript entrypoint on that computer's virtual disk. Non-system bundles are loaded back from the VFS and executed through a restricted Node `vm` application runtime. Host process execution is a separate default-deny gateway.
+
+The supplied ChatGPT workspace remains independently buildable under `apps/chatgpt-workspace`; the macOS desktop adapter gives it a native integrated title region and connects its operations to simulator VFS/network/application state.
+
+## Shell, packages, and Git
+
+The stateful zsh-, PowerShell-, and bash-labeled sessions implement command composition, pipelines, redirection, filesystem/process/DNS/HTTP/socket/application operations, software management, and a typed Git model. The exact accepted spellings, side effects, and explicit boundaries are documented in [docs/command-coverage.md](docs/command-coverage.md).
+
+Native managers: `brew`, `mas`, `apt`, `dpkg`, `snap`, `flatpak`, `winget`, `choco`, `scoop`.
+
+Language/project managers: `npm`, `pnpm`, `yarn`, `bun`, `pip`, `pipx`, `poetry`, `uv`, `cargo`, `go`, `gem`, `composer`, `dotnet`, `nuget`, `vcpkg`, `conda`.
 
 ```bash
-nslookup appstore.seed.local
-curl https://appstore.seed.local/apps/chatgpt | grep name
-ping ubuntu-dev.seed.local
-```
-
-```powershell
-Resolve-DnsName intranet.seed.local
-iwr http://intranet.seed.local:8080/ | findstr nominal
-Get-Process | findstr explorer
-```
-
-```bash
+apt update && apt install nginx
+pnpm add vite
+git add . && git commit -m "record causal proof"
 serve 8081 ~/site my-service.seed.local
-ss
-curl http://my-service.seed.local:8081/
 ```
 
-The shell parser supports command sequencing, `&&`, pipelines, output redirection, environment expansion, filesystem commands, process commands, DNS/ping/HTTP/socket inspection, virtual server creation, app installation, and gateway inspection.
+Package operations write install markers, receipts, dependency records, transaction records, and manager-appropriate manifests/lockfiles. Git writes visible `.git` refs, objects, config, and index metadata; the virtual `git.seed.local` service transports independent repository snapshots between computers.
 
-Package managers and Git mutate simulator state and write their receipts/objects into the virtual disk:
+## Virtual internet and gateways
+
+The in-memory fabric supplies A-record DNS, per-computer loopback namespaces, listeners, sockets, HTTP routing, and causal TCP packet traces. Computers can host services for themselves or one another. Slack and Microsoft Teams are separate service planes with separate hosts, stores, revisions, and client operations—there is no implicit bridge.
+
+Real HTTP(S) egress is disabled unless an enabled gateway rule matches protocol, hostname, port, and every resolved IPv4 address against the rule's CIDRs. Virtual destinations never escape through a host gateway.
+
+## Evidence and reports
+
+- [research technical report](docs/technical-report.md)
+- [architecture contract](docs/architecture.md)
+- [shell, Git, and package-manager coverage](docs/command-coverage.md)
+- [UI fidelity acceptance specification](docs/fidelity-acceptance-spec.md)
+- [v3 evidence manifest](artifacts/evidence-v3/evidence-manifest.json)
+- [app and fidelity survey PDF](output/pdf/seed-computer-ecosystem-app-survey-v0.3.0.pdf)
+- [research evidence deck](output/seed-computer-ecosystem-research-evidence-v0.3.0.pptx)
+
+The evidence suite contains individual full-resolution workflow states, legible per-OS plates, one portrait for every catalog application, complete launcher/icon walls, a DOM geometry audit, runtime snapshots/trajectories, and paired MP4 recordings with visible pointer/keyboard event overlays.
+
+## Fidelity contract
+
+Seed provides real browser execution and real Node-side simulator/application code over typed, persistent computer semantics. It does not claim native Mach-O/PE/ELF execution, vendor application source code, CPU/MMU emulation, native syscalls, or RFC-complete operating systems and network protocols. Those boundaries are explicit in the technical report so evaluation can distinguish demonstrated causal fidelity from native-machine equivalence.
+
+## Repository-local version history
+
+This workspace uses a repository-local Git store so the complete history can ship inside the release archive even when the parent scratch checkout is immutable:
 
 ```bash
-apt search nginx
-apt install nginx
-pnpm install typescript
-git status
-git add .
-git commit -m "record package proof"
-git log
+scripts/git-local.sh log --oneline --decorate
+scripts/git-local.sh status --short
 ```
-
-Native manager families are `brew`; `winget`, `choco`, `scoop`; and `apt`, `snap`, `flatpak`. Language/project families are `npm`, `pnpm`, `yarn`, `pip`, `pipx`, `uv`, `cargo`, `go`, `gem`, `composer`, `dotnet`, and `conda`.
-
-## evidence
-
-- [technical report](docs/technical-report.md)
-- [25-page app and fidelity survey](output/pdf/seed-computer-ecosystem-app-survey.pdf)
-- [48-state evidence grid](artifacts/evidence-v2/48-desktop-states-grid.png)
-- [macOS Slack → Windows Teams recording](artifacts/evidence-v2/recordings/cross-device-collaboration-live.mp4)
-- [Windows browser → Ubuntu packet trace recording](artifacts/evidence-v2/recordings/windows-to-ubuntu-network-live.mp4)
-- [Windows native window-management recording](artifacts/evidence-v2/recordings/windows-window-management.mp4)
-- [package-manager + Git recording](artifacts/evidence-v2/recordings/package-manager-and-git.mp4)
-- [demo evidence](artifacts/evidence/demo-run.json)
-- [trajectory JSONL](artifacts/evidence/demo-trajectory.jsonl)
-
-## fidelity contract
-
-This is a behavioral simulator, not CPU emulation or a VM. The implemented contract is real inside the simulator: VFS mutations persist as inode blobs; processes, packages, repositories, sockets, packets, and messages are typed state; virtual services route between computers; app and package installation write to the VFS; and interactions export as JSONL. It does **not** execute Mach-O/PE/ELF binaries, reproduce production syscalls, provide complete shell grammars, or implement RFC-complete TCP/TLS and arbitrary third-party application ABIs. See the report for the exact boundary and extension plan.

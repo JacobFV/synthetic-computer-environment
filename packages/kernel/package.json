@@ -4,5 +4,10 @@
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run --root ../.. tests/kernel.integration.test.ts"
+  },
   "dependencies": { "@seed/catalog": "workspace:*", "@seed/protocol": "workspace:*" }
 }

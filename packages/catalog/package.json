@@ -4,5 +4,9 @@
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@seed/protocol": "workspace:*" }
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": { "@seed/app-sdk": "workspace:*", "@seed/protocol": "workspace:*" }
 }

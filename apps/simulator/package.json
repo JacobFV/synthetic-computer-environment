@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --import tsx src/server/index.ts",
     "build": "vite build",
+    "typecheck": "tsc -b --pretty false",
     "start": "NODE_ENV=production node --import tsx src/server/index.ts"
   },
   "dependencies": {
@@ -16,7 +17,12 @@
     "@iconify/react": "^6.0.2",
     "@seed/catalog": "workspace:*",
     "@seed/kernel": "workspace:*",
+    "@seed/ecosystem-seed-2026": "workspace:*",
+    "@seed/os-macos": "workspace:*",
+    "@seed/os-ubuntu": "workspace:*",
+    "@seed/os-windows": "workspace:*",
     "@seed/protocol": "workspace:*",
+    "@seed/ui-surfaces": "workspace:*",
     "@vitejs/plugin-react": "^5.0.4",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",

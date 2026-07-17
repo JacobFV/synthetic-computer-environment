@@ -1,0 +1,21 @@
+{
+  "name": "@seed/ecosystem-seed-2026",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false",
+    "check:architecture": "node --import tsx src/check.ts"
+  },
+  "dependencies": {
+    "@seed/catalog": "workspace:*",
+    "@seed/os-core": "workspace:*",
+    "@seed/os-macos": "workspace:*",
+    "@seed/os-ubuntu": "workspace:*",
+    "@seed/os-windows": "workspace:*",
+    "@seed/protocol": "workspace:*",
+    "@seed/ui-surfaces": "workspace:*"
+  }
+}

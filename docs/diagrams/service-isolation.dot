@@ -1,0 +1,28 @@
+digraph ServiceIsolation {
+  graph [rankdir=LR, bgcolor="transparent", pad=0.16, nodesep=0.35, ranksep=0.55, splines=ortho, fontname="Inter"];
+  node [shape=rect, style="rounded,filled", fontname="Inter", fontsize=11, margin="0.18,0.11", color="#D7DFE8", penwidth=1.2, fillcolor="#FFFFFF", fontcolor="#172033"];
+  edge [color="#6F7F96", penwidth=1.5, arrowsize=0.7];
+
+  macSlack [label="macOS Slack client", fillcolor="#F6EAF7", color="#C49ACB"];
+  ubuntuSlack [label="Ubuntu Slack client", fillcolor="#F6EAF7", color="#C49ACB"];
+  slack [label="slack.seed.local\nSlack store + revision", fillcolor="#5B1B5D", color="#5B1B5D", fontcolor="#FFFFFF"];
+
+  winTeams [label="Windows Teams client", fillcolor="#ECECFF", color="#A8A7E6"];
+  macTeams [label="macOS Teams client", fillcolor="#ECECFF", color="#A8A7E6"];
+  teams [label="teams.seed.local\nTeams store + revision", fillcolor="#5558AF", color="#5558AF", fontcolor="#FFFFFF"];
+
+  dns [label="dns.seed.local\nA-record resolution", fillcolor="#DFF8EF", color="#75CDAA"];
+  fabric [label="InternetFabric\nsockets + packets + HTTP", fillcolor="#E8F1FF", color="#82AEE8"];
+
+  macSlack -> dns;
+  ubuntuSlack -> dns;
+  winTeams -> dns;
+  macTeams -> dns;
+  dns -> fabric;
+  fabric -> slack;
+  fabric -> teams;
+  slack -> macSlack [constraint=false];
+  slack -> ubuntuSlack [constraint=false];
+  teams -> winTeams [constraint=false];
+  teams -> macTeams [constraint=false];
+}

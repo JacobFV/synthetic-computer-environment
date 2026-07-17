@@ -1,0 +1,18 @@
+digraph CausalProof {
+  graph [rankdir=LR, bgcolor="transparent", pad=0.15, nodesep=0.36, ranksep=0.45, splines=ortho, fontname="Inter"];
+  node [shape=rect, style="rounded,filled", fontname="Inter", fontsize=12, margin="0.19,0.12", color="#D7DFE8", penwidth=1.2, fillcolor="#FFFFFF", fontcolor="#172033"];
+  edge [color="#6F7F96", penwidth=1.5, arrowsize=0.72];
+
+  input [label="Pointer / key / agent action", fillcolor="#14213D", color="#14213D", fontcolor="#FFFFFF"];
+  display [label="Real Chromium display\nDOM · CSS · events · iframe JS", fillcolor="#E8F1FF", color="#82AEE8"];
+  api [label="Typed HTTP / WebSocket API", fillcolor="#F3ECFF", color="#B29AE5"];
+  kernel [label="Authoritative subsystem\nVFS · process · package · Git · network · app", fillcolor="#DFF8EF", color="#75CDAA"];
+  durable [label="Durable / shared state\ninode blob · service store · receipt · ref", fillcolor="#FFF0E8", color="#EEA277"];
+  projection [label="Snapshot + live projection", fillcolor="#F5F7FA"];
+  evidence [label="Trajectory + packet evidence", fillcolor="#F5F7FA"];
+  result [label="Visible cross-view result", fillcolor="#14213D", color="#14213D", fontcolor="#FFFFFF"];
+
+  input -> display -> api -> kernel -> durable;
+  durable -> projection -> result;
+  kernel -> evidence -> result;
+}

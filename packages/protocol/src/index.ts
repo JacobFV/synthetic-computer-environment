@@ -2,7 +2,7 @@ export type OSKind = 'macos' | 'windows' | 'ubuntu';
 export type ShellKind = 'zsh' | 'powershell' | 'bash';
 export type ProcessState = 'running' | 'sleeping' | 'stopped' | 'zombie';
 export type Protocol = 'tcp' | 'udp' | 'icmp' | 'http' | 'https';
-export type PackageManagerKind = 'brew' | 'apt' | 'snap' | 'flatpak' | 'winget' | 'choco' | 'scoop' | 'npm' | 'pnpm' | 'yarn' | 'pip' | 'pipx' | 'uv' | 'cargo' | 'go' | 'gem' | 'composer' | 'dotnet' | 'conda';
+export type PackageManagerKind = 'brew' | 'mas' | 'apt' | 'dpkg' | 'snap' | 'flatpak' | 'winget' | 'choco' | 'scoop' | 'npm' | 'pnpm' | 'yarn' | 'bun' | 'pip' | 'pipx' | 'poetry' | 'uv' | 'cargo' | 'go' | 'gem' | 'composer' | 'dotnet' | 'nuget' | 'vcpkg' | 'conda';
 export type CollaborationServiceId = 'slack' | 'teams';
 export type AppServiceKind = 'app-registry' | 'collaboration' | 'git' | 'mail' | 'calendar' | 'identity' | 'cloud-data' | 'media-catalog' | 'model-api' | 'virtual-network-client';
 
@@ -110,6 +110,46 @@ export interface GatewayRule {
   audit: boolean;
 }
 
+/**
+ * Fully serializable input consumed by the simulation kernel. Ecosystem
+ * packages own policy and composition; the kernel only owns execution.
+ */
+export interface SimulationComputerTemplate {
+  spec: ComputerSpec;
+  systemAppIds: readonly string[];
+  thirdPartyAppIds: readonly string[];
+  roles: readonly string[];
+}
+
+export type SimulationServiceKind = AppServiceKind | 'dns' | 'intranet';
+
+export interface SimulationServiceSpec {
+  id: string;
+  host: string;
+  ipv4: string;
+  computerId: string;
+  port: number;
+  protocol: Protocol;
+  kind: SimulationServiceKind;
+  /** Required for app-registry services so installation resolves by OS. */
+  targetOS?: OSKind;
+  /** State with different isolation domains must never share a backing store. */
+  isolationDomain: string;
+}
+
+export interface SimulationTopology {
+  id: string;
+  version: string;
+  network: {
+    cidr: string;
+    dns: string;
+    domain: string;
+  };
+  computers: readonly SimulationComputerTemplate[];
+  services: readonly SimulationServiceSpec[];
+  gateways: readonly GatewayRule[];
+}
+
 export interface AppManifest {
   id: string;
   name: string;
@@ -207,6 +247,7 @@ export interface PackageRecord {
   source: string;
   integrity: string;
   dependencies: string[];
+  dependencyType: 'direct' | 'transitive';
 }
 
 export interface PackageTransactionRecord {
@@ -286,6 +327,20 @@ export interface VirtualHttpResponse {
   traceId: string;
 }
 
+/**
+ * Metadata returned when a virtual HTTP response is promoted to a real browser
+ * document. The body is intentionally delivered by `documentUrl`, so Chromium
+ * parses the response with its native HTML/JavaScript engine instead of the UI
+ * pretending to interpret it.
+ */
+export interface BrowserNavigationResponse {
+  url: string;
+  documentUrl: string;
+  status: number;
+  headers: Record<string, string>;
+  traceId: string;
+}
+
 export interface TrajectoryEvent {
   sequence: number;
   at: string;
@@ -314,6 +369,7 @@ export interface ComputerSnapshot {
 
 export interface SimulationSnapshot {
   runId: string;
+  topology: { id: string; version: string };
   now: string;
   computers: ComputerSnapshot[];
   dns: DnsRecord[];
