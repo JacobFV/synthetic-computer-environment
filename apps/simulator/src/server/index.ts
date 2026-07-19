@@ -11,6 +11,7 @@ import type { BrowserNavigationResponse, VirtualHttpResponse } from '@seed/proto
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(here, '../../../..');
+try { process.loadEnvFile(path.join(workspaceRoot, '.env')); } catch { /* no .env — model + real egress features degrade gracefully */ }
 assertSeed2026Blueprint();
 const runtime = new SimulationRuntime({ topology: seed2026Blueprint, stateRoot: path.join(workspaceRoot, '.state'), runId: process.env.SEED_RUN_ID });
 await runtime.initialize();
@@ -20,6 +21,38 @@ interface StoredBrowserDocument {
   url: string;
   createdAt: number;
   response: VirtualHttpResponse;
+  real: boolean;
+}
+
+function isRealHost(target: string): boolean {
+  try {
+    const host = new URL(target.includes('://') ? target : `http://${target}`).hostname.toLowerCase();
+    if (!host) return false;
+    return !host.endsWith('.seed.local') && !host.endsWith('.local') && host !== 'localhost' && !host.startsWith('127.') && !host.startsWith('10.42.');
+  } catch { return false; }
+}
+
+// Real internet pages load their own subresources; virtual pages stay fully locked down.
+const realBrowserPolicy = [
+  "default-src 'self' https: http: data: blob:",
+  "img-src https: http: data: blob:",
+  "style-src 'unsafe-inline' https: http:",
+  "font-src https: http: data:",
+  "script-src 'unsafe-inline' 'unsafe-eval' https: http: blob:",
+  "connect-src https: http: data: blob:",
+  "media-src https: http: data: blob:",
+  "frame-src https: http:",
+  'base-uri *',
+  "form-action https: http:",
+  "frame-ancestors 'self'",
+].join('; ');
+
+function injectBaseHref(html: string, documentUrl: string): string {
+  const tag = `<base href="${documentUrl.replace(/"/g, '&quot;')}">`;
+  if (/<base\b/i.test(html)) return html;
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (match) => `${match}${tag}`);
+  if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (match) => `${match}<head>${tag}</head>`);
+  return `${tag}${html}`;
 }
 
 const browserDocuments = new Map<string, StoredBrowserDocument>();
@@ -57,14 +90,16 @@ function browserDocumentHeaders(document: StoredBrowserDocument): OutgoingHttpHe
   for (const [name, value] of Object.entries(document.response.headers)) {
     const normalized = name.toLowerCase();
     if (normalized === 'content-security-policy') { virtualPolicy = value; continue; }
+    // Real pages arrive framed/CSP-locked by their origin; we replace both so they render inside the virtual browser.
+    if (document.real && (normalized === 'x-frame-options' || normalized === 'content-security-policy-report-only')) continue;
     if (!blockedVirtualDocumentHeaders.has(normalized)) headers[normalized] = value;
   }
   headers['content-type'] ??= 'text/html; charset=utf-8';
   headers['cache-control'] = 'no-store';
   // A comma-combined CSP field is interpreted as multiple policies; Chromium
   // enforces both the virtual server policy and the simulator isolation policy.
-  headers['content-security-policy'] = virtualPolicy ? `${virtualPolicy}, ${browserIsolationPolicy}` : browserIsolationPolicy;
-  headers['cross-origin-resource-policy'] = 'same-origin';
+  headers['content-security-policy'] = document.real ? realBrowserPolicy : (virtualPolicy ? `${virtualPolicy}, ${browserIsolationPolicy}` : browserIsolationPolicy);
+  if (!document.real) headers['cross-origin-resource-policy'] = 'same-origin';
   headers['referrer-policy'] = 'no-referrer';
   headers['x-seed-virtual-url'] = document.url;
   headers['x-seed-virtual-trace-id'] = document.response.traceId;
@@ -104,7 +139,7 @@ async function api(req: IncomingMessage, res: ServerResponse): Promise<boolean> 
       const document = browserDocuments.get(browserDocumentMatch[1]!);
       if (!document) { res.writeHead(410, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }); res.end('virtual browser document expired'); return true; }
       res.writeHead(document.response.status, browserDocumentHeaders(document));
-      res.end(document.response.body);
+      res.end(document.real ? injectBaseHref(document.response.body, document.url) : document.response.body);
       return true;
     }
     const shellMatch = url.pathname.match(/^\/api\/computers\/([^/]+)\/shell$/);
@@ -129,6 +164,13 @@ async function api(req: IncomingMessage, res: ServerResponse): Promise<boolean> 
       json(res, 200, await runtime.launchApp(executeAppMatch[1]!, executeAppMatch[2]!, { operation: String(input.operation ?? 'open'), payload: (input.payload as Record<string, unknown>) ?? {} }));
       broadcast(); return true;
     }
+    if (req.method === 'POST' && url.pathname === '/api/computers') {
+      const input = await body(req);
+      const os = String(input.os ?? '');
+      if (os !== 'macos' && os !== 'windows' && os !== 'ubuntu') { json(res, 400, { error: 'os must be macos, windows, or ubuntu' }); return true; }
+      const spec = await runtime.spawnComputer({ os, hostname: input.hostname ? String(input.hostname) : undefined });
+      json(res, 201, spec); broadcast(); return true;
+    }
     const uninstallMatch = url.pathname.match(/^\/api\/computers\/([^/]+)\/apps\/([^/]+)$/);
     if (uninstallMatch && req.method === 'DELETE') { await runtime.uninstallApp(uninstallMatch[1]!, uninstallMatch[2]!); json(res, 200, { ok: true }); broadcast(); return true; }
     const browserNavigationMatch = url.pathname.match(/^\/api\/computers\/([^/]+)\/browser\/navigate$/);
@@ -138,12 +180,42 @@ async function api(req: IncomingMessage, res: ServerResponse): Promise<boolean> 
       const response = await runtime.http(browserNavigationMatch[1]!, target);
       pruneBrowserDocuments();
       const id = randomUUID();
-      browserDocuments.set(id, { computerId: browserNavigationMatch[1]!, url: target, response, createdAt: Date.now() });
+      browserDocuments.set(id, { computerId: browserNavigationMatch[1]!, url: target, response, createdAt: Date.now(), real: isRealHost(target) });
       const navigation: BrowserNavigationResponse = { url: target, documentUrl: `/api/browser/documents/${id}`, status: response.status, headers: response.headers, traceId: response.traceId };
       json(res, 200, navigation); broadcast(); return true;
     }
     const httpMatch = url.pathname.match(/^\/api\/computers\/([^/]+)\/http$/);
     if (httpMatch && req.method === 'POST') { const input = await body(req); json(res, 200, await runtime.http(httpMatch[1]!, String(input.url ?? ''))); broadcast(); return true; }
+    const fileMatch = url.pathname.match(/^\/api\/computers\/([^/]+)\/file$/);
+    if (fileMatch && req.method === 'GET') {
+      try { json(res, 200, await runtime.readTextFile(fileMatch[1]!, url.searchParams.get('path') ?? '')); }
+      catch (error) { json(res, 404, { error: (error as Error).message }); }
+      return true;
+    }
+    if (fileMatch && req.method === 'PUT') {
+      const input = await body(req);
+      try { json(res, 200, await runtime.writeTextFile(fileMatch[1]!, String(input.path ?? ''), String(input.content ?? ''))); broadcast(); }
+      catch (error) { json(res, 400, { error: (error as Error).message }); }
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/chat') {
+      const input = await body(req);
+      const key = process.env.ANTHROPIC_API_KEY;
+      if (!key) { json(res, 503, { error: 'no ANTHROPIC_API_KEY configured in .env' }); return true; }
+      const messages = Array.isArray(input.messages) && input.messages.length ? input.messages : [{ role: 'user', content: String(input.prompt ?? '') }];
+      try {
+        const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: String(input.model ?? 'claude-haiku-4-5-20251001'), max_tokens: 1024, system: String(input.system ?? 'You are ChatGPT running inside the Seed virtual computer ecosystem, a browser-rendered simulation of macOS, Windows, and Ubuntu machines on a virtual network. Be concise and helpful.'), messages }),
+        });
+        const data = await upstream.json() as { content?: Array<{ type: string; text?: string }>; model?: string; usage?: unknown; error?: { message?: string } };
+        if (!upstream.ok) { json(res, upstream.status, { error: data?.error?.message ?? 'model request failed' }); return true; }
+        const text = (data.content ?? []).filter((block) => block.type === 'text').map((block) => block.text ?? '').join('\n');
+        json(res, 200, { text, model: data.model, usage: data.usage });
+      } catch (error) { json(res, 502, { error: (error as Error).message }); }
+      return true;
+    }
     const collabMatch = url.pathname.match(/^\/api\/computers\/([^/]+)\/collaboration\/(slack|teams)\/([^/]+)$/);
     if (collabMatch && req.method === 'GET') {
       json(res, 200, await runtime.pollCollaboration(collabMatch[1]!, collabMatch[2] as 'slack' | 'teams', collabMatch[3]!, Number(url.searchParams.get('after') ?? 0)));

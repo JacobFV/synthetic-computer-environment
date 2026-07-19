@@ -98,6 +98,34 @@ export class SimulationRuntime {
     for (const id of [...template.systemAppIds, ...template.thirdPartyAppIds]) await this.installApp(spec.id, id, true);
   }
 
+  async spawnComputer(options: { os: OSKind; hostname?: string }): Promise<ComputerSpec> {
+    const donor = this.topology.computers.find((computer) => computer.spec.os === options.os && computer.spec.displays.length > 0)
+      ?? this.topology.computers.find((computer) => computer.spec.displays.length > 0);
+    if (!donor) throw new Error('no display-capable computer template to clone');
+    const usedIds = new Set(this.topology.computers.map((computer) => computer.spec.id));
+    const usedHosts = new Set(this.topology.computers.map((computer) => computer.spec.hostname));
+    const usedIps = new Set(this.topology.computers.map((computer) => computer.spec.ipv4));
+    let index = 2;
+    let id = `${options.os}-${index}`;
+    while (usedIds.has(id)) id = `${options.os}-${++index}`;
+    let hostname = options.hostname?.trim().replace(/\s+/g, '-').toLowerCase() || id;
+    const baseHost = hostname;
+    let suffix = 2;
+    while (usedHosts.has(hostname)) hostname = `${baseHost}-${suffix++}`;
+    let octet = 40;
+    let ipv4 = `10.42.0.${octet}`;
+    while (usedIps.has(ipv4)) ipv4 = `10.42.0.${++octet}`;
+    const spec: ComputerSpec = {
+      ...structuredClone(donor.spec), id, hostname, os: options.os, ipv4,
+      displays: donor.spec.displays.length ? structuredClone(donor.spec.displays) : [{ id: 'main', name: 'Seed Virtual Display', width: 1440, height: 900, scale: 1 }],
+    };
+    const template: SimulationComputerTemplate = { spec, systemAppIds: [...donor.systemAppIds], thirdPartyAppIds: [...donor.thirdPartyAppIds], roles: [...donor.roles] };
+    this.topology.computers = [...this.topology.computers, template];
+    await this.createComputer(template);
+    this.trajectory.record({ computerId: id, actor: 'human', kind: 'process', action: 'computer.spawned', data: { os: options.os, hostname, ipv4 } });
+    return spec;
+  }
+
   private daemonsFor(os: OSKind): string[] {
     if (os === 'windows') return ['smss.exe', 'csrss.exe', 'wininit.exe', 'services.exe', 'lsass.exe', 'dwm.exe', 'explorer.exe'];
     if (os === 'macos') return ['kernel_task', 'WindowServer', 'loginwindow', 'cfprefsd', 'mDNSResponder', 'Finder'];
@@ -398,6 +426,20 @@ export class SimulationRuntime {
     const response = await this.network.request(computerId, url);
     this.trajectory.record({ computerId, actor: 'human', kind: 'network', action: 'browser.navigate', target: url, data: { status: response.status, traceId: response.traceId } });
     return response;
+  }
+
+  async readTextFile(computerId: string, filePath: string): Promise<{ path: string; content: string }> {
+    const computer = this.computers.get(computerId);
+    if (!computer) throw new Error(`unknown computer: ${computerId}`);
+    return { path: filePath, content: await computer.vfs.readFile(filePath) };
+  }
+
+  async writeTextFile(computerId: string, filePath: string, content: string): Promise<{ path: string; bytes: number }> {
+    const computer = this.computers.get(computerId);
+    if (!computer) throw new Error(`unknown computer: ${computerId}`);
+    await computer.vfs.writeFile(filePath, content);
+    this.trajectory.record({ computerId, actor: 'human', kind: 'filesystem', action: 'file.write', target: filePath, data: { bytes: content.length } });
+    return { path: filePath, bytes: content.length };
   }
 
   private registerCollaborationService(registry: ComputerRuntime, service: CollaborationService, edgePid: number, endpoint: SimulationServiceSpec): void {

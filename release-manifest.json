@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "name": "seed-computer-ecosystem-0.3.0",
+  "version": "0.3.0",
+  "revision": "e23d201c93e1b8431e64435ae090f16a5553409d",
+  "sourceAuthority": "tracked files from the repository-local Git store",
+  "portableGitBundle": "seed-computer-ecosystem-0.3.0.bundle",
+  "generatedDeliverables": [
+    "artifacts/evidence-v3",
+    "artifacts/ui-audit-v3.json",
+    "output/diagrams",
+    "output/pdf/seed-computer-ecosystem-app-survey-v0.3.0.pdf",
+    "output/seed-computer-ecosystem-research-evidence-v0.3.0.pptx"
+  ],
+  "exclusions": [
+    "node_modules",
+    ".state",
+    "dist",
+    ".next",
+    "artifacts/evidence-v3/recordings/raw"
+  ]
+}

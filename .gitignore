@@ -17,3 +17,6 @@ __pycache__/
 tmp/
 apps/chatgpt-workspace/.next/
 apps/chatgpt-workspace/workspace.db*
+.env
+.env.*
+.DS_Store

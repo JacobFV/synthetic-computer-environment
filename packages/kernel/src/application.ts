@@ -152,9 +152,14 @@ export class SeedApplicationRuntime {
       await this.updateState(app, { lastServiceOperation: operation, lastServiceResult: result, updatedAt: new Date().toISOString() });
       return result;
     }
-    if (['status', 'stage', 'commit', 'branch', 'fetch', 'pull', 'push'].includes(operation) && app.entrypoint === 'app://git') {
+    if (['status', 'stage', 'commit', 'branch', 'checkout', 'switch', 'fetch', 'pull', 'push'].includes(operation) && app.entrypoint === 'app://git') {
       const args = Array.isArray(payload.args) ? payload.args.map(String) : [];
       return this.deps.software.gitCommand([operation, ...args], String(payload.cwd ?? app.dataPath));
+    }
+    if (operation === 'source-control' && app.entrypoint === 'app://git') {
+      const cwd = String(payload.cwd ?? app.dataPath);
+      if (payload.action === 'checkout' && payload.branch) return this.deps.software.gitCommand(['checkout', String(payload.branch)], cwd);
+      return this.deps.software.gitCommand(['status'], cwd);
     }
     if (['list', 'search', 'inspect', 'install', 'upgrade', 'remove'].includes(operation) && app.entrypoint === 'app://packages') {
       const manager = String(payload.manager ?? this.deps.software.supportedManagers()[0]);

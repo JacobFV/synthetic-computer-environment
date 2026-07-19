@@ -1,0 +1,17 @@
+import { useState } from 'react';
+import { MapPin, Plus, Search } from 'lucide-react';
+import { Brand, runOperation, type SurfaceProps } from './shared';
+
+export function MapsSurface({ manifest, computer }: SurfaceProps) {
+  const places: Array<[string, string]> = [['Main Library','100 Larkin St'],['Mission Workshop','18th Street'],['Factory Lab','Dogpatch'],['China Basin','Mission Bay']];
+  const [place, setPlace] = useState(0);
+  const [query, setQuery] = useState('');
+  const [zoom, setZoom] = useState(1);
+  const [route, setRoute] = useState<null | { to: string; miles: string }>(null);
+  const selectedPlace = places[place]!;
+  const shown = places.map(([name, address], index) => ({ name, address, index })).filter(({ name, address }) => `${name} ${address}`.toLowerCase().includes(query.toLowerCase()));
+  const selectPlace = async (index: number) => { if (await runOperation(manifest, computer, 'search-place', { query: places[index]![0] })) { setPlace(index); setRoute(null); } };
+  const changeZoom = async (delta: number) => { const next = Math.min(2.2, Math.max(0.6, Number((zoom + delta).toFixed(1)))); await runOperation(manifest, computer, 'zoom', { level: next }); setZoom(next); };
+  const showDirections = async () => { await runOperation(manifest, computer, 'route', { from: 'Current Location', to: selectedPlace[0] }); setRoute({ to: selectedPlace[0], miles: `0.${place + 8}` }); };
+  return <div className="maps-app surface-maps"><aside><Brand manifest={manifest}/><label><Search/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Maps"/></label><h4>Favorites</h4>{shown.length === 0 ? <p style={{ opacity: 0.6, padding: 8 }}>No matches.</p> : shown.map(({ name, address, index }) => <button className={place === index ? 'active' : ''} onClick={() => void selectPlace(index)} key={name}><MapPin/><span><b>{name}</b><small>{address}</small></span></button>)}{route && <div style={{ marginTop: 12, padding: 10, borderTop: '1px solid rgba(128,128,128,0.3)' }}><b>Route to {route.to}</b><p style={{ margin: '4px 0' }}>{route.miles} mi · ~{Math.round(Number(route.miles) * 20) + 4} min</p><ol style={{ margin: 0, paddingLeft: 18, fontSize: 12, opacity: 0.85 }}><li>Head north on Market St</li><li>Turn toward {route.to}</li><li>Arrive at {selectedPlace[1]}</li></ol><button onClick={() => setRoute(null)} style={{ marginTop: 6 }}>Clear route</button></div>}</aside><section><div className="map-canvas"><div style={{ position: 'absolute', inset: 0, transform: `scale(${zoom})`, transformOrigin: 'center', transition: 'transform 0.2s' }}><div className="water"/><div className="road r1"/><div className="road r2"/><div className="road r3"/><span className="map-label bay">SAN FRANCISCO BAY</span>{places.map(([name], index) => <button className={`map-pin pin-${index} ${place === index ? 'selected' : ''}`} onClick={() => void selectPlace(index)} key={name}><MapPin fill="currentColor"/></button>)}</div><div className="map-controls"><button onClick={() => void changeZoom(0.2)}><Plus/></button><button onClick={() => void changeZoom(-0.2)}>−</button></div></div><article className="place-card"><span className="place-photo"><MapPin/></span><div><h2>{selectedPlace[0]}</h2><p>{selectedPlace[1]} · San Francisco</p><span>Open · 0.{place + 8} mi</span></div><button onClick={() => void showDirections()}>Directions</button></article></section></div>;
+}

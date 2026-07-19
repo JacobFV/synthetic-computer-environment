@@ -1,0 +1,33 @@
+import { useState } from 'react';
+import { Archive, Clock3, Inbox, Mail, Plus, Search, Send } from 'lucide-react';
+import { Brand, runOperation, type SurfaceProps } from './shared';
+
+export function MailSurface({ manifest, computer }: SurfaceProps) {
+  const outlook = manifest.id === 'outlook';
+  const messages: Array<[string, string, string, string]> = [
+    ['Maya Chen', 'Evidence run complete', 'The 48-state capture finished without trajectory drift.', '10:42 AM'],
+    ['Package Registry', '3 updates available', 'Kernel tools and the Chromium package can be updated.', '9:18 AM'],
+    ['Research Ops', 'Review: network boundaries', 'Please verify that each service keeps an isolated namespace.', 'Yesterday'],
+    ['Git Service', 'main received 2 commits', 'The simulator branch advanced to 91ac4f2.', 'Monday'],
+  ];
+  type Msg = [string, string, string, string];
+  const folders = ['Inbox', 'Archive', 'Drafts', 'Snoozed'];
+  const [selected, setSelected] = useState(0);
+  const [folder, setFolder] = useState(0);
+  const [query, setQuery] = useState('');
+  const [archived, setArchived] = useState<string[]>([]);
+  const [drafts, setDrafts] = useState<Msg[]>([]);
+  const [readSubjects, setReadSubjects] = useState<string[]>([]);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [composer, setComposer] = useState<null | { to: string; subject: string; body: string }>(null);
+  const source: Msg[] = folder === 0 ? messages.filter((message) => !archived.includes(message[1])) : folder === 1 ? messages.filter((message) => archived.includes(message[1])) : folder === 2 ? drafts : [];
+  const visible = source.filter((message) => (!unreadOnly || folder !== 0 || !readSubjects.includes(message[1])) && message.join(' ').toLowerCase().includes(query.toLowerCase()));
+  const selectedMessage: Msg = visible[selected] ?? visible[0] ?? source[0] ?? messages[0]!;
+  const inboxCount = messages.filter((message) => !archived.includes(message[1]) && !readSubjects.includes(message[1])).length;
+  const readMessage = async (index: number, subject: string) => { if (await runOperation(manifest, computer, 'read-message', { subject })) { setSelected(index); setReadSubjects((items) => items.includes(subject) ? items : [...items, subject]); } };
+  const archiveMessage = async () => { if (await runOperation(manifest, computer, 'archive', { subject: selectedMessage[1] })) { setArchived((items) => [...items, selectedMessage[1]]); setSelected(0); } };
+  const openCompose = (prefill?: Partial<{ to: string; subject: string; body: string }>) => setComposer({ to: prefill?.to ?? '', subject: prefill?.subject ?? '', body: prefill?.body ?? '' });
+  const sendCompose = async () => { if (!composer) return; await runOperation(manifest, computer, 'send', { to: composer.to, subject: composer.subject, body: composer.body }); setComposer(null); };
+  const saveDraft = async () => { if (!composer) return; const draft: Msg = ['Me', composer.subject || '(no subject)', composer.body, 'Draft']; await runOperation(manifest, computer, 'compose', { subject: composer.subject }); setDrafts((items) => [draft, ...items]); setComposer(null); };
+  return <div className={`mail-app surface-${manifest.id} ${outlook ? 'outlook' : ''}`}><nav><Brand manifest={manifest}/><button className="compose" onClick={() => openCompose()}><Plus/> New {outlook ? 'mail' : 'message'}</button>{[Inbox, Archive, Mail, Clock3].map((NavIcon, index) => <button className={index === folder ? 'active' : ''} key={index} onClick={() => { setFolder(index); setSelected(0); }}><NavIcon/>{folders[index]}{index === 0 && inboxCount > 0 && <b>{inboxCount}</b>}{index === 2 && drafts.length > 0 && <b>{drafts.length}</b>}</button>)}</nav><section className="mail-list"><header><h2>{folders[folder]}</h2><button className={unreadOnly ? 'active' : ''} onClick={() => setUnreadOnly((value) => !value)}>{unreadOnly ? 'Unread' : 'Filter'}</button></header><label><Search/><input value={query} onChange={(event) => { setQuery(event.target.value); setSelected(0); }} placeholder="Search mail"/></label>{visible.length === 0 ? <p style={{ padding: 16, opacity: 0.6 }}>No messages.</p> : visible.map((message, index) => <button className={`${selected === index ? 'active' : ''} ${readSubjects.includes(message[1]) ? 'read' : ''}`} onClick={() => void readMessage(index, message[1])} key={message[1]}><span>{message[0][0]}</span><div><b>{message[0]}</b><strong>{message[1]}</strong><p>{message[2]}</p></div><small>{message[3]}</small></button>)}</section><article className="mail-reader"><header><button title="Reply" onClick={() => openCompose({ to: selectedMessage[0], subject: `Re: ${selectedMessage[1]}` })}>↩</button><button title="Forward" onClick={() => openCompose({ subject: `Fwd: ${selectedMessage[1]}`, body: selectedMessage[2] })}>↪</button><button onClick={() => void archiveMessage()}><Archive/></button><button>•••</button></header><h1>{selectedMessage[1]}</h1><div className="sender"><span>{selectedMessage[0][0]}</span><div><b>{selectedMessage[0]}</b><small>to agent@seed.local · via {outlook ? 'outlook.seed.local' : 'mail.seed.local'}</small></div><time>{selectedMessage[3]}</time></div><p>{selectedMessage[2]}</p><p>All referenced artifacts are available on the isolated virtual service network. No external delivery was attempted.</p><button className="reply" onClick={() => openCompose({ to: selectedMessage[0], subject: `Re: ${selectedMessage[1]}` })}>Reply</button></article>{composer && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }} onClick={() => setComposer(null)}><form onClick={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); void sendCompose(); }} style={{ background: 'var(--surface, #1e1e1e)', color: 'inherit', width: 460, maxWidth: '90%', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 8, boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}><b>New message</b><input value={composer.to} onChange={(event) => setComposer({ ...composer, to: event.target.value })} placeholder="To" style={{ padding: 8 }}/><input value={composer.subject} onChange={(event) => setComposer({ ...composer, subject: event.target.value })} placeholder="Subject" style={{ padding: 8 }}/><textarea value={composer.body} onChange={(event) => setComposer({ ...composer, body: event.target.value })} placeholder="Message" style={{ padding: 8, minHeight: 120 }}/><div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" onClick={() => void saveDraft()}>Save draft</button><button type="submit" className="reply"><Send size={14}/> Send</button></div></form></div>}</div>;
+}

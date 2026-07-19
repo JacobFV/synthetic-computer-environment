@@ -74,6 +74,7 @@ export const seed2026Blueprint = Object.freeze({
     { id: 'intranet', host: 'intranet.seed.local', ipv4: '10.42.0.30', computerId: 'ubuntu-dev', port: 8080, protocol: 'http', kind: 'intranet', isolationDomain: 'ubuntu-dev' },
   ],
   gateways: [
+    { id: 'internet-egress', name: 'open internet egress', enabled: true, direction: 'egress', protocols: ['tcp', 'http', 'https'], cidrs: [], hostnames: ['*'], ports: '*', audit: true },
     { id: 'docs-egress', name: 'documentation egress', enabled: true, direction: 'egress', protocols: ['https'], cidrs: [], hostnames: ['developer.mozilla.org', 'docs.python.org', 'platform.openai.com'], ports: [443], audit: true },
     { id: 'default-deny', name: 'default deny', enabled: false, direction: 'egress', protocols: ['tcp', 'udp', 'http', 'https'], cidrs: ['0.0.0.0/0'], hostnames: ['*'], ports: '*', audit: true },
   ],
