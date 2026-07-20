@@ -24,15 +24,12 @@ async function copyPath(relative: string, filter?: (source: string) => boolean) 
 try {
   await mkdir(releaseRoot, { recursive: true });
   const { stdout } = await execFileAsync('git', [
-    '--git-dir=.vcs/git',
-    '--work-tree=.',
     'ls-files',
     '-z',
   ], { cwd: root, encoding: 'buffer', maxBuffer: 16 * 1024 * 1024 });
 
   for (const relative of stdout.toString('utf8').split('\0').filter(Boolean)) await copyPath(relative);
 
-  await copyPath('.vcs/git');
   await copyPath('artifacts/ui-audit-v3.json');
   const rawRecordingRoot = path.join(root, 'artifacts', 'evidence-v3', 'recordings', 'raw');
   await copyPath('artifacts/evidence-v3', (source) => source !== rawRecordingRoot && !source.startsWith(`${rawRecordingRoot}${path.sep}`));
@@ -41,14 +38,11 @@ try {
   await copyPath('output/seed-computer-ecosystem-research-evidence-v0.3.0.pptx');
 
   const { stdout: revision } = await execFileAsync('git', [
-    '--git-dir=.vcs/git',
-    '--work-tree=.',
     'rev-parse',
     'HEAD',
   ], { cwd: root });
   const bundleName = `${releaseName}.bundle`;
   await execFileAsync('git', [
-    '--git-dir=.vcs/git',
     'bundle',
     'create',
     path.join(releaseRoot, bundleName),
@@ -59,7 +53,7 @@ try {
     name: releaseName,
     version: packageJson.version,
     revision: revision.trim(),
-    sourceAuthority: 'tracked files from the repository-local Git store',
+    sourceAuthority: 'tracked files from the repository Git store',
     portableGitBundle: bundleName,
     generatedDeliverables: [
       'artifacts/evidence-v3',

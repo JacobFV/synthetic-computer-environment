@@ -632,7 +632,7 @@ pnpm capture:evidence
 pnpm manifest:evidence
 ```
 
-The simulator defaults to `.state/run-<timestamp>` and capture supplies deterministic run IDs. The delivered repository history can be inspected through `scripts/git-local.sh` when the release archive includes its repository-local Git store.
+The simulator defaults to `.state/run-<timestamp>` and capture supplies deterministic run IDs. The delivered repository history can be inspected with ordinary `git log` against the checkout.
 
 Exact wall-clock timestamps, UUIDs, and host-rendered font rasterization are not currently deterministic across independent runs. The system supports deterministic topology and scripted action order; it does not yet claim byte-identical replay or virtual time.
 

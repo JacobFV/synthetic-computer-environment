@@ -109,13 +109,13 @@ The evidence suite contains individual full-resolution workflow states, legible 
 
 Seed provides real browser execution and real Node-side simulator/application code over typed, persistent computer semantics. It does not claim native Mach-O/PE/ELF execution, vendor application source code, CPU/MMU emulation, native syscalls, or RFC-complete operating systems and network protocols. Those boundaries are explicit in the technical report so evaluation can distinguish demonstrated causal fidelity from native-machine equivalence.
 
-## Repository-local version history
+## Version history
 
-This workspace uses a repository-local Git store so the complete history can ship inside the release archive even when the parent scratch checkout is immutable:
+The complete history lives in the repository's standard Git store and is inspected with ordinary Git:
 
 ```bash
-scripts/git-local.sh log --oneline --decorate
-scripts/git-local.sh status --short
+git log --oneline --decorate
+git status --short
 ```
 
 The packaged release also includes a portable Git bundle that can be cloned into a conventional checkout with `git clone seed-computer-ecosystem-0.3.0.bundle seed-computer-ecosystem`.

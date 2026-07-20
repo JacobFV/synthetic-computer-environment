@@ -6,7 +6,6 @@ dist/
 .pnpm-home/
 .pnpm-store/
 .turbo/
-.vcs/
 artifacts/
 output/
 upload/
